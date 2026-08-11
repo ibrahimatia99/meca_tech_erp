@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold">Workers & Team Roster</h2>
+            <p class="text-xs text-slate-400">Total Monthly Payroll: <strong class="text-brand">{{ "{:,.3f}".format(total_payroll) }} TND</strong></p>
+        </div>
+        <a href="{{ url_for('worker_create') }}" class="bg-brand text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-brand/20 hover:bg-brandHover transition">
+            + Add New Worker
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="p-3 rounded-xl text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 uppercase font-bold border-b border-slate-800">
+                <tr>
+                    <th class="p-4">Full Name</th>
+                    <th class="p-4">Role / Trade</th>
+                    <th class="p-4">Monthly Rate</th>
+                    <th class="p-4">Phone / CIN</th>
+                    <th class="p-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for w in workers %}
+                <tr class="hover:bg-slate-800/30">
+                    <td class="p-4 font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="user" class="w-4 h-4 text-brand"></i>
+                        <span>{{ w.full_name }}</span>
+                    </td>
+                    <td class="p-4 text-slate-300 font-semibold">{{ w.role }}</td>
+                    <td class="p-4 font-black text-green-400">{{ "{:,.3f}".format(w.monthly_rate) }} TND</td>
+                    <td class="p-4 text-slate-400">
+                        {{ w.phone or 'No Phone' }} <br>
+                        <span class="text-slate-500 text-[10px]">CIN: {{ w.cin_number or 'N/A' }}</span>
+                    </td>
+                    <td class="p-4 text-right space-x-2">
+                        <!-- CALENDAR ATTENDANCE -->
+                        <a href="{{ url_for('worker_calendar', worker_id=w.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg font-bold border border-blue-500/20 transition">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                            <span>Attendance</span>
+                        </a>
+                        
+                        <!-- EDIT WORKER (FIXED ENDPOINT) -->
+                        <a href="{{ url_for('worker_edit', worker_id=w.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-white rounded-lg font-semibold border border-slate-700 transition">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            <span>Edit</span>
+                        </a>
+
+                        <!-- DELETE WORKER -->
+                        <form action="{{ url_for('worker_delete', worker_id=w.id) }}" method="POST" class="inline" onsubmit="return confirm('Remove worker {{ w.full_name }}?');">
+                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-500 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="p-8 text-center text-slate-500">No workers in roster. Click "+ Add New Worker" above.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

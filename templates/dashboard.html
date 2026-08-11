@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-8">
+    
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="p-4 rounded-xl text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20 shadow-lg flex items-center justify-between">
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- TOP SUMMARY STAT CARDS -->
+    <div class="grid grid-cols-4 gap-6">
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approved Billed Revenue</p>
+                <i data-lucide="trending-up" class="w-5 h-5 text-green-400"></i>
+            </div>
+            <p class="text-2xl font-black text-slate-100">{{ "{:,.3f}".format(total_revenue) }} <span class="text-xs text-slate-500">TND</span></p>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cash Collected</p>
+                <i data-lucide="wallet" class="w-5 h-5 text-brand"></i>
+            </div>
+            <p class="text-2xl font-black text-green-400">{{ "{:,.3f}".format(total_collected) }} <span class="text-xs text-slate-500">TND</span></p>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Outstanding Balance</p>
+                <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400"></i>
+            </div>
+            <p class="text-2xl font-black text-amber-400">{{ "{:,.3f}".format(outstanding_balance) }} <span class="text-xs text-slate-500">TND</span></p>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Workshop Health</p>
+                <i data-lucide="boxes" class="w-5 h-5 text-blue-400"></i>
+            </div>
+            <p class="text-xs text-slate-300 font-bold">
+                Low Stock Alerts: <span class="text-red-400 font-black">{{ low_stock_count }}</span><br>
+                Machines Maintenance: <span class="text-amber-400 font-black">{{ maintenance_machines|length }}</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- REVENUE VS EXPENSE DIAGRAM CHART & EXPENSE FORM -->
+    <div class="grid grid-cols-3 gap-6">
+        
+        <div class="col-span-2 bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-100">Monthly Financial Overview</h3>
+                    <p class="text-xs text-slate-400">Revenue (Approved Quotes / Factures) vs. Overhead Expenses</p>
+                </div>
+            </div>
+            
+            <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="financeChart" height="280"></canvas>
+            </div>
+        </div>
+
+        <!-- LOG EXPENSE FORM -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-3">Log Monthly Expense / Cost</h3>
+            
+            <form action="{{ url_for('add_expense') }}" method="POST" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Expense Category *</label>
+                    <select name="category" required class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-100 focus:outline-none focus:border-brand">
+                        <option value="Raw Materials">Raw Materials (Sheets/Profiles)</option>
+                        <option value="Machine Maintenance">Machine Maintenance</option>
+                        <option value="Rent & Utilities">Rent & Electricity</option>
+                        <option value="Worker Salaries">Worker Salaries</option>
+                        <option value="Other Overhead">Other Overhead</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Description *</label>
+                    <input type="text" name="description" required placeholder="e.g. 50 Sheets Stainless 2mm" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-brand">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Amount (TND) *</label>
+                    <input type="number" step="any" name="amount" required placeholder="0.000" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-brand">
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover shadow-lg shadow-brand/20 transition">
+                    + Add Expense
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EXPENSES LOG TABLE WITH EDIT/DELETE -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden space-y-4 p-6">
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+            <i data-lucide="wallet" class="w-5 h-5 text-red-400"></i>
+            <span>Logged Overhead & Expenses</span>
+        </h3>
+
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 uppercase font-bold border-b border-slate-800">
+                <tr>
+                    <th class="p-3">Category</th>
+                    <th class="p-3">Description</th>
+                    <th class="p-3">Amount</th>
+                    <th class="p-3">Date</th>
+                    <th class="p-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for exp in expenses_log %}
+                <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-bold text-brand">{{ exp.category }}</td>
+                    <td class="p-3 text-slate-200">{{ exp.description }}</td>
+                    <td class="p-3 font-black text-red-400">{{ "{:,.3f}".format(exp.amount) }} TND</td>
+                    <td class="p-3 text-slate-500">{{ exp.date_logged.strftime('%d %b %Y') }}</td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="toggleEditModal('{{ exp.id }}')" class="p-1.5 text-slate-400 hover:text-amber-400">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <form action="{{ url_for('delete_expense', expense_id=exp.id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this expense?');">
+                            <button type="submit" class="p-1.5 text-slate-400 hover:text-red-500">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                <div id="edit-modal-{{ exp.id }}" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div class="bg-slate-900 p-6 rounded-2xl max-w-md w-full border border-slate-800 space-y-4 text-left">
+                        <h4 class="text-sm font-bold text-slate-100">Edit Expense</h4>
+                        <form action="{{ url_for('edit_expense', expense_id=exp.id) }}" method="POST" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Category</label>
+                                <select name="category" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-slate-100">
+                                    <option value="Raw Materials" {% if exp.category == 'Raw Materials' %}selected{% endif %}>Raw Materials</option>
+                                    <option value="Machine Maintenance" {% if exp.category == 'Machine Maintenance' %}selected{% endif %}>Machine Maintenance</option>
+                                    <option value="Rent & Utilities" {% if exp.category == 'Rent & Utilities' %}selected{% endif %}>Rent & Utilities</option>
+                                    <option value="Worker Salaries" {% if exp.category == 'Worker Salaries' %}selected{% endif %}>Worker Salaries</option>
+                                    <option value="Other Overhead" {% if exp.category == 'Other Overhead' %}selected{% endif %}>Other Overhead</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Description</label>
+                                <input type="text" name="description" value="{{ exp.description }}" required class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Amount (TND)</label>
+                                <input type="number" step="any" name="amount" value="{{ exp.amount }}" required class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100">
+                            </div>
+                            <div class="flex gap-2 justify-end pt-2">
+                                <button type="button" onclick="toggleEditModal('{{ exp.id }}')" class="px-4 py-2 bg-slate-800 rounded-xl text-xs text-slate-400">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="p-6 text-center text-slate-500">No expenses logged yet. Use the form above to add workshop overhead.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SYSTEM NOTIFICATIONS LOG -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                <i data-lucide="bell" class="w-5 h-5 text-brand"></i>
+                <span>App Notifications & System Activity Log</span>
+            </h3>
+        </div>
+
+        <div class="divide-y divide-slate-800">
+            {% for item in activity_feed %}
+            <div class="p-4 hover:bg-slate-800/30 transition flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="p-2.5 rounded-xl bg-slate-800 {{ item.color }}">
+                        <i data-lucide="{{ item.icon }}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-200">{{ item.event_title }}</p>
+                        <p class="text-xs text-slate-400">{{ item.event_desc }}</p>
+                    </div>
+                </div>
+                <span class="text-xs font-semibold text-slate-500">{{ item.date_created.strftime('%d %b %Y %H:%M') }}</span>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-400 text-sm">
+                No recent activity logged yet.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- JSON DATA STORAGE -->
+<script id="data-revenue" type="application/json">{{ monthly_revenue_json | safe }}</script>
+<script id="data-expenses" type="application/json">{{ monthly_expenses_json | safe }}</script>
+
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+
+<script>
+    function toggleEditModal(id) {
+        const modal = document.getElementById('edit-modal-' + id);
+        if (modal) modal.classList.toggle('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const revenueData = JSON.parse(document.getElementById('data-revenue').textContent || '[]');
+        const expenseData = JSON.parse(document.getElementById('data-expenses').textContent || '[]');
+
+        const canvas = document.getElementById('financeChart');
+        if (canvas && typeof Chart !== 'undefined') {
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Approved Revenue (TND)',
+                            data: revenueData,
+                            backgroundColor: '#10B981',
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Expenses (TND)',
+                            data: expenseData,
+                            backgroundColor: '#EF4444',
+                            borderRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#94A3B8', font: { weight: 'bold', size: 11 } }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94A3B8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94A3B8' }, grid: { color: '#1E293B' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

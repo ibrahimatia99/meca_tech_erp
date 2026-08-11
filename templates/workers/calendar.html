@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- TOP HEADER -->
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <a href="{{ url_for('workers_list') }}" class="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h2 class="text-3xl font-black text-slate-100 flex items-center gap-3">
+                    <span>{{ worker.full_name }}</span>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
+                        {{ worker.role }}
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-400">Monthly Salary: <strong class="text-slate-200">{{ "{:,.3f}".format(worker.monthly_rate) }} TND/month</strong></p>
+            </div>
+        </div>
+
+        <!-- MONTH / YEAR NAV -->
+        <form method="GET" action="{{ url_for('worker_calendar', worker_id=worker.id) }}" class="flex items-center gap-3">
+            <select name="month" onchange="this.form.submit()" class="px-3 py-2 bg-lightCard dark:bg-darkCard border border-slate-800 rounded-xl text-xs font-bold text-slate-200">
+                {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ m }} - {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="year" value="{{ year }}" onchange="this.form.submit()" class="w-24 px-3 py-2 bg-lightCard dark:bg-darkCard border border-slate-800 rounded-xl text-xs font-bold text-slate-200">
+        </form>
+    </div>
+
+    <!-- STATS SUMMARY -->
+    <div class="grid grid-cols-4 gap-6">
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Worked Days (Month)</p>
+            <p class="text-2xl font-black text-green-400">{{ days_worked }} <span class="text-xs text-slate-500 font-medium">days</span></p>
+            <p class="text-[10px] text-slate-500 mt-1">Saturdays count as 0.5 day</p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Absences / Unpaid Off</p>
+            <p class="text-2xl font-black text-red-400">{{ days_off }} <span class="text-xs text-slate-500 font-medium">days</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Congé Used (Month)</p>
+            <p class="text-2xl font-black text-amber-400">{{ conge_days }} <span class="text-xs text-slate-500 font-medium">days</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Congé Accrued (0.5/mo)</p>
+            <p class="text-2xl font-black text-brand">{{ "{:,.1f}".format(remaining_conge) }} <span class="text-xs text-slate-500 font-medium">/ {{ "{:,.1f}".format(total_conge_earned) }} days</span></p>
+        </div>
+    </div>
+
+    <!-- CALENDAR GRID -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-800 p-6 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+            <h3 class="text-lg font-bold text-slate-100">{{ month_name }} {{ year }} Calendar</h3>
+            <div class="flex gap-4 text-xs font-bold">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500"></span> Present (Full)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500"></span> Saturday (0.5 Day)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-600"></span> Sunday (Rest Day)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500"></span> Congé</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-7 gap-3 text-center">
+            <!-- Weekday Headers -->
+            <div class="text-xs font-bold text-slate-400 uppercase py-2">Mon</div>
+            <div class="text-xs font-bold text-slate-400 uppercase py-2">Tue</div>
+            <div class="text-xs font-bold text-slate-400 uppercase py-2">Wed</div>
+            <div class="text-xs font-bold text-slate-400 uppercase py-2">Thu</div>
+            <div class="text-xs font-bold text-slate-400 uppercase py-2">Fri</div>
+            <div class="text-xs font-bold text-brand uppercase py-2">Sat (0.5d)</div>
+            <div class="text-xs font-bold text-slate-500 uppercase py-2">Sun (Rest)</div>
+
+            <!-- Days Grid -->
+            {% for week in month_days %}
+                {% for day in week %}
+                    {% set loop_idx = loop.index0 %}
+                    {% if day == 0 %}
+                        <div class="h-24 bg-slate-900/20 rounded-xl"></div>
+                    {% else %}
+                        {% set status = attendance_dict.get(day, None) %}
+                        {% set is_saturday = (loop_idx == 5) %}
+                        {% set is_sunday = (loop_idx == 6) %}
+
+                        <div class="h-24 p-2 rounded-xl border flex flex-col justify-between items-center transition 
+                            {% if is_sunday %}bg-slate-900/60 border-slate-800 text-slate-500
+                            {% elif status == 'Worked' and is_saturday %}bg-blue-500/10 border-blue-500/30 text-blue-400
+                            {% elif status == 'Worked' %}bg-green-500/10 border-green-500/30 text-green-400
+                            {% elif status == 'DayOff' %}bg-red-500/10 border-red-500/30 text-red-400
+                            {% elif status == 'Congé' %}bg-amber-500/10 border-amber-500/30 text-amber-400
+                            {% else %}bg-slate-900/40 border-slate-800 text-slate-400{% endif %}">
+                            
+                            <div class="flex justify-between w-full text-xs font-bold px-1">
+                                <span>{{ day }}</span>
+                                {% if is_saturday %}<span class="text-[9px] text-brand">½ Day</span>{% endif %}
+                                {% if is_sunday %}<span class="text-[9px] text-slate-500">Rest</span>{% endif %}
+                            </div>
+                            
+                            {% if not is_sunday %}
+                            <form action="{{ url_for('set_worker_attendance', worker_id=worker.id) }}" method="POST" class="w-full">
+                                <input type="hidden" name="day" value="{{ day }}">
+                                <input type="hidden" name="month" value="{{ month }}">
+                                <input type="hidden" name="year" value="{{ year }}">
+                                
+                                <select name="status" onchange="this.form.submit()" class="w-full text-[10px] font-bold py-1 bg-slate-900 rounded border border-slate-700 focus:outline-none">
+                                    <option value="Worked" {% if status == 'Worked' or status is none %}selected{% endif %}>
+                                        {% if is_saturday %}Present (½d){% else %}Present (1d){% endif %}
+                                    </option>
+                                    <option value="DayOff" {% if status == 'DayOff' %}selected{% endif %}>Absent / Off</option>
+                                    <option value="Congé" {% if status == 'Congé' %}selected{% endif %}>Congé</option>
+                                </select>
+                            </form>
+                            {% else %}
+                            <span class="text-[10px] font-bold text-slate-600 mb-2">Weekly Off</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

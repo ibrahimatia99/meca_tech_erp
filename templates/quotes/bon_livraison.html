@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bon de Livraison #BL-{{ quote.quote_number }} - Meca Tech Atia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .a4-page {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                height: 100% !important;
+                padding: 15mm !important;
+                margin: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-200 min-h-screen py-8 text-slate-800 flex flex-col items-center">
+
+    <div class="no-print w-[210mm] mb-4 flex justify-between items-center">
+        <a href="{{ url_for('quotes_list') }}" class="text-sm font-semibold text-slate-700 hover:underline">← Back to List</a>
+        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition">
+            🖨️ Print / Save A4 Delivery Slip
+        </button>
+    </div>
+
+    <div class="a4-page w-[210mm] min-h-[297mm] bg-white p-[15mm] shadow-2xl border border-slate-300 text-sm flex flex-col justify-between box-border">
+        
+        <div>
+            <!-- HEADER -->
+            <div class="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
+                <div>
+                    <h1 class="text-4xl font-black text-[#FF5500]">Meca Tech Atia</h1>
+                    <p class="text-xs font-bold text-slate-600 uppercase tracking-widest mt-1">Fabrication Mécanique & Métallique</p>
+                    <p class="text-xs text-slate-500 mt-2">Tunisia | Phone: +216 XX XXX XXX</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-3xl font-black text-slate-900">BON DE LIVRAISON</h2>
+                    <p class="text-sm font-bold text-emerald-600">#BL-{{ quote.quote_number }}</p>
+                    <p class="text-xs text-slate-500 mt-1">Date: {{ quote.date_created.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+
+            <!-- CLIENT & TRANSPORT INFO BOX -->
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200">
+                    <p class="text-xs uppercase font-bold text-slate-400 mb-1">Destinataire / Client</p>
+                    <p class="text-xl font-bold text-slate-900">{{ quote.client.company_name }}</p>
+                    <p class="text-xs text-slate-600 mt-0.5">Matricule Fiscal: {{ quote.client.tax_id or 'N/A' }}</p>
+                </div>
+                
+                <div class="p-5 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                    <p class="text-xs uppercase font-bold text-emerald-800 mb-2">Informations de Transport</p>
+                    <p class="text-xs font-medium text-slate-700">Chauffeur: <span class="font-bold text-slate-900">{{ quote.driver_name or 'Non spécifié' }}</span></p>
+                    <p class="text-xs font-medium text-slate-700 mt-1">CIN Chauffeur: <span class="font-bold text-slate-900">{{ quote.driver_cin or 'Non spécifié' }}</span></p>
+                    <p class="text-xs font-medium text-slate-700 mt-1">Matricule Véhicule: <span class="font-bold text-slate-900">{{ quote.vehicle_plate or 'Non spécifié' }}</span></p>
+                </div>
+            </div>
+
+            <!-- QUANTITY TABLE -->
+            <table class="w-full text-left mb-12 border-collapse">
+                <thead>
+                    <tr class="border-b-2 border-slate-900 text-slate-900 text-xs uppercase font-bold">
+                        <th class="py-3">#</th>
+                        <th class="py-3">Désignation des Marchandises</th>
+                        <th class="py-3 text-center">Quantité Livrée</th>
+                        <th class="py-3 text-center">Conformité</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    {% for item in quote.items %}
+                    <tr>
+                        <td class="py-4 font-semibold text-slate-400">{{ loop.index }}</td>
+                        <td class="py-4 font-medium text-slate-900 text-base">{{ item.description }}</td>
+                        <td class="py-4 text-center font-black text-xl text-slate-900">{{ "{:,.2f}".format(item.quantity) }}</td>
+                        <td class="py-4 text-center text-slate-400 border-dashed border-b border-slate-200">[  ] Conforme</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- FOOTER & SIGNATURES -->
+        <div class="border-t-2 border-slate-900 pt-8 grid grid-cols-2 gap-8">
+            <div>
+                <p class="font-bold text-slate-900 mb-1">Signature & Date Transporteur</p>
+                <div class="w-full h-24 border border-dashed border-slate-300 rounded-xl mt-2"></div>
+            </div>
+            <div>
+                <p class="font-bold text-slate-900 mb-1">Nom, Cachet & Signature Client</p>
+                <p class="text-[10px] text-slate-400 mb-1">Reçu les marchandises en bon état:</p>
+                <div class="w-full h-24 border border-dashed border-slate-300 rounded-xl"></div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

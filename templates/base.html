@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meca Tech Atia - ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FF5500',
+                        brandHover: '#E04B00',
+                        darkBg: '#13151D',
+                        darkCard: '#1C1E2A',
+                        darkNav: '#171923',
+                        lightBg: '#F4F5F9',
+                        lightCard: '#FFFFFF',
+                        lightNav: '#E2E8F0'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Replace external Chart.js script with local static file -->
+    <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+</head>
+<body class="bg-lightBg dark:bg-darkBg text-slate-800 dark:text-slate-100 transition-colors duration-200 font-sans min-h-screen flex">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-lightNav dark:bg-darkNav p-5 flex flex-col justify-between shrink-0 min-h-screen border-r border-slate-200 dark:border-slate-800">
+        <div>
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="bg-brand text-white p-2 rounded-xl font-bold text-xl">M</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">Meca Tech</h1>
+                    <p class="text-xs text-brand font-semibold uppercase tracking-wider">Atia ERP</p>
+                </div>
+            </div>
+
+            <nav class="space-y-1">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('quotes_list') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>Quotes & Invoices</span>
+                </a>
+                <a href="{{ url_for('clients_list') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Clients</span>
+                </a>
+                <a href="{{ url_for('stock_list') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span>Stock & Offcuts</span>
+                </a>
+                <a href="{{ url_for('machines_list') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                    <span>Machinery</span>
+                </a>
+                <a href="{{ url_for('workers_list') }}" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-medium transition">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                    <span>Workers</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <button onclick="toggleTheme()" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800/80 text-xs font-semibold">
+                <span class="flex items-center gap-2">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:inline"></i>
+                    <i data-lucide="moon" class="w-4 h-4 inline dark:hidden"></i>
+                    Theme
+                </span>
+                <span class="text-brand font-bold">Dark / Light</span>
+            </button>
+            <div class="flex items-center justify-between px-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-brand/20 text-brand flex items-center justify-center font-bold">
+                        {{ current_user.full_name[0] }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold leading-none">{{ current_user.full_name }}</p>
+                        <p class="text-xs text-slate-400 capitalize">{{ current_user.role }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="text-slate-400 hover:text-red-500 transition">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div class="relative w-96">
+                <i data-lucide="search" class="w-4 h-4 absolute left-4 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Search quotes, clients, stock..." 
+                       class="w-full pl-11 pr-4 py-2.5 bg-lightCard dark:bg-darkCard border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand">
+            </div>
+        </header>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        lucide.createIcons();
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
+</body>
+</html>

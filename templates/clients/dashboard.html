@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- TOP NAVIGATION & ACTIONS -->
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <a href="{{ url_for('clients_list') }}" class="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h2 class="text-3xl font-black text-slate-100 flex items-center gap-3">
+                    <span>{{ client.company_name }}</span>
+                    <span class="text-xs font-mono font-normal px-3 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
+                        MF: {{ client.tax_id or 'No MF' }}
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-400">Client CRM & Financial History Overview</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('client_edit', client_id=client.id) }}" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-medium text-sm transition">
+                Edit Profile
+            </a>
+            <a href="{{ url_for('quote_create') }}" class="bg-brand text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-lg shadow-brand/20 hover:bg-brandHover transition">
+                + Create Quote For Client
+            </a>
+        </div>
+    </div>
+
+    <!-- STATS SUMMARY CARDS -->
+    <div class="grid grid-cols-4 gap-6">
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Billed</p>
+            <p class="text-2xl font-black text-slate-100">{{ "{:,.3f}".format(total_billed) }} <span class="text-xs font-semibold text-slate-500">TND</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Paid</p>
+            <p class="text-2xl font-black text-green-400">{{ "{:,.3f}".format(total_paid) }} <span class="text-xs font-semibold text-slate-500">TND</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Balance Due</p>
+            <p class="text-2xl font-black {% if balance_due > 0 %}text-red-400{% else %}text-slate-100{% endif %}">
+                {{ "{:,.3f}".format(balance_due) }} <span class="text-xs font-semibold text-slate-500">TND</span>
+            </p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Documents</p>
+            <p class="text-2xl font-black text-brand">{{ quotes|length }}</p>
+        </div>
+    </div>
+
+    <!-- CLIENT DETAILS CARD & QUOTES TABLE -->
+    <div class="grid grid-cols-3 gap-6">
+        
+        <!-- LEFT: CONTACT INFO CARD -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 h-fit">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-3">Client Contact Info</h3>
+            <div>
+                <p class="text-xs text-slate-500">Contact Person</p>
+                <p class="text-sm font-bold text-slate-200">{{ client.contact_name or 'N/A' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500">Phone</p>
+                <p class="text-sm font-bold text-slate-200">{{ client.phone or 'N/A' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500">Email</p>
+                <p class="text-sm font-bold text-slate-200">{{ client.email or 'N/A' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500">Address</p>
+                <p class="text-sm font-medium text-slate-300 leading-relaxed">{{ client.address or 'N/A' }}</p>
+            </div>
+        </div>
+
+        <!-- RIGHT: QUOTES & INVOICES TABLE -->
+        <div class="col-span-2 bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div class="p-6 border-b border-slate-800">
+                <h3 class="text-base font-bold text-slate-100">Quotes & Financial History</h3>
+            </div>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-100 dark:bg-slate-800/50 text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="px-4 py-4">Ref #</th>
+                        <th class="px-4 py-4">Date</th>
+                        <th class="px-4 py-4">Status</th>
+                        <th class="px-4 py-4">Total</th>
+                        <th class="px-4 py-4">Paid</th>
+                        <th class="px-4 py-4 text-right">A4 Documents</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    {% for q in quotes %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                        <td class="px-4 py-4 font-bold text-brand">{{ q.quote_number }}</td>
+                        <td class="px-4 py-4 text-xs text-slate-400">{{ q.date_created.strftime('%d %b %Y') }}</td>
+                        <td class="px-4 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-brand/10 text-brand">
+                                {{ q.status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 font-bold text-slate-200">{{ "{:,.3f}".format(q.total_amount) }} TND</td>
+                        <td class="px-4 py-4 font-semibold text-green-400">{{ "{:,.3f}".format(q.amount_paid) }} TND</td>
+                        <td class="px-4 py-4 text-right space-x-1">
+                            <a href="{{ url_for('quote_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1 bg-slate-800 rounded text-xs text-slate-300 hover:text-brand">Devis</a>
+                            <a href="{{ url_for('invoice_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs hover:bg-blue-500 hover:text-white">Facture</a>
+                            <a href="{{ url_for('bon_livraison_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-xs hover:bg-emerald-500 hover:text-white">BL</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-slate-400">
+                            No quotes or invoices generated for this client yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
