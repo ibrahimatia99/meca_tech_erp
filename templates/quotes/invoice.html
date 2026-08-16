@@ -2,143 +2,157 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Facture #FACT-{{ quote.quote_number }} - Meca Tech Atia</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>FACTURE #{{ quote.quote_number }} — {{ brand_name }}</title>
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 0;
+        :root {
+            --theme-color: #FF5500;
+            --pdf-margin: 10mm;
+            --pdf-font-size: 11pt;
         }
-        @media print {
-            html, body {
-                width: 210mm;
-                height: 297mm;
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .no-print {
-                display: none !important;
-            }
-            .a4-page {
-                box-shadow: none !important;
-                border: none !important;
-                width: 100% !important;
-                height: 100% !important;
-                padding: 15mm !important;
-                margin: 0 !important;
-            }
-        }
+        @page { size: A4; margin: var(--pdf-margin); }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: var(--pdf-font-size); color: #0F172A; background: #fff; margin: 0; padding: 20px; }
+        
+        .header-table, .items-table, .totals-table { width: 100%; border-collapse: collapse; }
+        
+        .brand-title { font-size: 24pt; font-weight: 900; color: var(--theme-color); line-height: 1.1; }
+        .brand-subtitle { font-size: 9pt; font-weight: 800; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px; }
+        .brand-info { font-size: 8.5pt; color: #64748B; margin-top: 4px; }
+        
+        .doc-type { font-size: 26pt; font-weight: 900; color: #0F172A; text-align: right; letter-spacing: -0.02em; }
+        .doc-ref { font-size: 11pt; font-weight: 800; color: var(--theme-color); text-align: right; margin-top: 2px; }
+        .doc-date { font-size: 8.5pt; color: #64748B; text-align: right; margin-top: 4px; }
+        
+        .divider { border-bottom: 2px solid #0F172A; margin: 16px 0 24px 0; }
+        
+        .client-card { background-color: #F8FAFC; border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid #E2E8F0; }
+        .client-label { font-size: 8pt; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .client-name { font-size: 14pt; font-weight: 900; color: #0F172A; margin-top: 2px; }
+        .client-tax { font-size: 9pt; color: #64748B; margin-top: 4px; }
+        
+        .items-table th { text-align: left; padding: 10px 8px; font-size: 8pt; font-weight: 800; color: #0F172A; text-transform: uppercase; border-bottom: 2px solid #0F172A; }
+        .items-table td { padding: 12px 8px; font-size: 9.5pt; color: #0F172A; border-bottom: 1px solid #F1F5F9; }
+        .item-order { font-weight: 800; color: #94A3B8; }
+        .item-desc { font-weight: 700; color: #0F172A; }
+        .item-qty { font-weight: 800; }
+        
+        .totals-section { margin-top: 40px; display: table; width: 100%; }
+        .words-card { background-color: #F8FAFC; border-radius: 12px; padding: 14px; border: 1px solid #E2E8F0; }
+        .words-label { font-size: 8pt; font-weight: 800; color: #94A3B8; text-transform: uppercase; }
+        .words-text { font-size: 9pt; font-weight: 700; font-style: italic; color: #1E293B; margin-top: 4px; }
+        
+        .totals-table td { padding: 4px 0; font-size: 9.5pt; }
+        .total-label { color: #64748B; font-weight: 600; }
+        .total-val { text-align: right; font-weight: 800; color: #0F172A; }
+        .total-ttc-row td { padding-top: 12px; border-top: 1px solid #CBD5E1; }
+        .total-ttc-label { font-size: 14pt; font-weight: 900; color: #0F172A; }
+        .total-ttc-val { font-size: 14pt; font-weight: 900; color: var(--theme-color); text-align: right; }
+
+        @media print { .no-print { display: none !important; } body { padding: 0; } }
     </style>
 </head>
-<body class="bg-slate-200 min-h-screen py-8 text-slate-800 flex flex-col items-center">
+<body style="--theme-color: {{ app_theme_color or '#FF5500' }}; --pdf-margin: {{ pdf_margin or 10 }}mm; --pdf-font-size: {{ pdf_font_size or 11 }}pt;">
 
-    <div class="no-print w-[210mm] mb-4 flex justify-between items-center">
-        <a href="{{ url_for('quotes_list') }}" class="text-sm font-semibold text-slate-700 hover:underline">← Back to List</a>
-        <button onclick="window.print()" class="bg-[#FF5500] hover:bg-[#E04B00] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition">
-            🖨️ Print / Save A4 Invoice
+    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: var(--theme-color); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            🖨️ Imprimer Facture
         </button>
     </div>
 
-    <div class="a4-page w-[210mm] min-h-[297mm] bg-white p-[15mm] shadow-2xl border border-slate-300 text-sm flex flex-col justify-between box-border">
-        
-        <div>
-            <!-- HEADER -->
-            <div class="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
-                <div>
-                    <h1 class="text-4xl font-black text-[#FF5500]">Meca Tech Atia</h1>
-                    <p class="text-xs font-bold text-slate-600 uppercase tracking-widest mt-1">Fabrication Mécanique & Métallique</p>
-                    <p class="text-xs text-slate-500 mt-2">Tunisia | Matricule Fiscal: XXX/X/X/000</p>
+    <!-- HEADER SECTION -->
+    <table class="header-table">
+        <tr>
+            <td style="width: 60%; vertical-align: top;">
+                {% if brand_logo %}
+                    <img src="{{ brand_logo }}" alt="Logo" style="max-height: 50px; width: auto; object-fit: contain; margin-bottom: 6px;">
+                {% endif %}
+                <div class="brand-title">{{ brand_name }}</div>
+                <div class="brand-subtitle">FABRICATION MÉCANIQUE & MÉTALLIQUE</div>
+                <div class="brand-info">
+                    {{ brand_address }} | Tél: {{ brand_phone }}<br>
+                    Email: {{ brand_email }} | Matricule Fiscal: {{ brand_tax_id }}
                 </div>
-                <div class="text-right">
-                    <h2 class="text-4xl font-black text-slate-900">FACTURE</h2>
-                    <p class="text-sm font-bold text-[#FF5500]">#FAC-{{ quote.quote_number }}</p>
-                    <p class="text-xs text-slate-500 mt-1">Date: {{ quote.date_created.strftime('%d/%m/%Y') }}</p>
-                </div>
-            </div>
+            </td>
+            <td style="width: 40%; vertical-align: top;">
+                <div class="doc-type">FACTURE</div>
+                <div class="doc-ref">#FAC-{{ quote.quote_number }}</div>
+                <div class="doc-date">Date: {{ quote.date_created.strftime('%d/%m/%Y') }}</div>
+            </td>
+        </tr>
+    </table>
 
-            <!-- CLIENT INFO -->
-            <div class="mb-8 p-5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
-                <div>
-                    <p class="text-xs uppercase font-bold text-slate-400">Client / Facturer à</p>
-                    <p class="text-xl font-bold text-slate-900">{{ quote.client.company_name }}</p>
-                    <p class="text-xs text-slate-600 mt-0.5">Matricule Fiscal: {{ quote.client.tax_id or 'N/A' }}</p>
-                </div>
-            </div>
+    <div class="divider"></div>
 
-            <!-- TABLE -->
-            <table class="w-full text-left mb-8 border-collapse">
-                <thead>
-                    <tr class="border-b-2 border-slate-900 text-slate-900 text-xs uppercase font-bold">
-                        <th class="py-3">#</th>
-                        <th class="py-3">Désignation</th>
-                        <th class="py-3 text-center">Quantité</th>
-                        <th class="py-3 text-right">Prix Unitaire (TND)</th>
-                        <th class="py-3 text-right">Montant HT (TND)</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    {% for item in quote.items %}
-                    <tr>
-                        <td class="py-4 font-semibold text-slate-400">{{ loop.index }}</td>
-                        <td class="py-4 font-medium text-slate-900 text-base">{{ item.description }}</td>
-                        <td class="py-4 text-center font-bold text-base">{{ "{:,.2f}".format(item.quantity) }}</td>
-                        <td class="py-4 text-right font-medium text-base">{{ "{:,.3f}".format(item.unit_rate) }}</td>
-                        <td class="py-4 text-right font-bold text-base">{{ "{:,.3f}".format(item.total_price) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- CLIENT BOX -->
+    <div class="client-card">
+        <div class="client-label">CLIENT / FACTURER À</div>
+        <div class="client-name">{{ quote.client.company_name }}</div>
+        <div class="client-tax">
+            Contact: {{ quote.client.contact_name or 'N/A' }} | 
+            Matricule Fiscal: {{ quote.client.tax_id or 'N/A' }}
         </div>
-
-        <div>
-            <!-- TOTALS -->
-            <div class="flex justify-between items-start pt-6 border-t-2 border-slate-900 mb-8">
-                <div class="w-1/2 pr-6">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Montant en Lettres TTC</p>
-                    <p class="text-xs italic font-medium bg-slate-50 p-4 rounded-xl border border-slate-200 text-slate-800 leading-relaxed">
-                        {{ quote.total_in_words }}
-                    </p>
-                </div>
-                <div class="w-1/2 space-y-2 text-right">
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-medium">Total HT:</span>
-                        <span class="font-semibold text-slate-900">{{ "{:,.3f}".format(quote.subtotal) }} TND</span>
-                    </div>
-                    {% if quote.discount_amount > 0 %}
-                    <div class="flex justify-between text-xs text-red-500">
-                        <span>Remise ({{ quote.discount_rate }}%):</span>
-                        <span>(-) {{ "{:,.3f}".format(quote.discount_amount) }} TND</span>
-                    </div>
-                    {% endif %}
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-medium">TVA (19%):</span>
-                        <span class="font-semibold text-slate-900">{{ "{:,.3f}".format(quote.tax_amount) }} TND</span>
-                    </div>
-                    <div class="flex justify-between text-xs">
-                        <span class="text-slate-500 font-medium">Timbre Fiscal:</span>
-                        <span class="font-semibold text-slate-900">{{ "{:,.3f}".format(quote.stamp_tax) }} TND</span>
-                    </div>
-                    <div class="flex justify-between text-lg font-black text-slate-900 pt-3 border-t-2 border-slate-300">
-                        <span>Total Net TTC:</span>
-                        <span class="text-[#FF5500]">{{ "{:,.3f}".format(quote.total_amount) }} TND</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SIGNATURES -->
-            <div class="border-t border-slate-200 pt-6 text-xs text-slate-600 flex justify-between items-end">
-                <div>
-                    <p class="font-bold text-slate-900">Cachet & Signature Client</p>
-                    <div class="w-56 h-20 border border-dashed border-slate-300 rounded-xl mt-2"></div>
-                </div>
-                <div class="text-right">
-                    <p class="font-bold text-slate-900">Cachet & Signature Meca Tech Atia</p>
-                    <div class="w-56 h-20 border border-dashed border-slate-300 rounded-xl mt-2"></div>
-                </div>
-            </div>
-        </div>
-
     </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 50%;">DÉSIGNATION</th>
+                <th style="width: 15%; text-align: center;">QUANTITÉ</th>
+                <th style="width: 15%; text-align: right;">PRIX UNITAIRE (TND)</th>
+                <th style="width: 15%; text-align: right;">MONTANT HT (TND)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in quote.items %}
+            <tr>
+                <td class="item-order">{{ loop.index }}</td>
+                <td class="item-desc">{{ item.description }}</td>
+                <td class="item-qty" style="text-align: center;">{{ "{:,.2f}".format(item.quantity) }}</td>
+                <td style="text-align: right;">{{ "{:,.3f}".format(item.unit_rate) }}</td>
+                <td style="text-align: right; font-weight: 800;">{{ "{:,.3f}".format(item.total_price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALS SECTION -->
+    <table class="totals-section">
+        <tr>
+            <td style="width: 55%; vertical-align: bottom; padding-right: 20px;">
+                <div class="words-card">
+                    <div class="words-label">MONTANT EN LETTRES TTC</div>
+                    <div class="words-text">{{ quote.total_in_words }}</div>
+                </div>
+            </td>
+            <td style="width: 45%; vertical-align: top;">
+                <table class="totals-table">
+                    <tr>
+                        <td class="total-label">Total HT:</td>
+                        <td class="total-val">{{ "{:,.3f}".format(quote.subtotal) }} TND</td>
+                    </tr>
+                    {% if quote.discount_amount > 0 %}
+                    <tr>
+                        <td class="total-label">Remise ({{ quote.discount_rate }}%):</td>
+                        <td class="total-val">-{{ "{:,.3f}".format(quote.discount_amount) }} TND</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="total-label">TVA (19%):</td>
+                        <td class="total-val">{{ "{:,.3f}".format(quote.tax_amount) }} TND</td>
+                    </tr>
+                    <tr>
+                        <td class="total-label">Timbre Fiscal:</td>
+                        <td class="total-val">{{ "{:,.3f}".format(quote.stamp_tax) }} TND</td>
+                    </tr>
+                    <tr class="total-ttc-row">
+                        <td class="total-ttc-label">Total Net TTC:</td>
+                        <td class="total-ttc-val">{{ "{:,.3f}".format(quote.total_amount) }} TND</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
 </body>
 </html>
