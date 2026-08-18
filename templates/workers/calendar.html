@@ -1,0 +1,148 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- HEADER & NAVIGATION -->
+    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('workers.workers_list') }}" class="text-xs font-bold text-slate-400 hover:text-white transition">← Back to Roster</a>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-100 mt-1">Attendance Calendar — {{ worker.full_name }}</h2>
+            <p class="text-xs text-slate-400">Manage daily presence, off days, and paid leave (Congé) logs.</p>
+        </div>
+
+        <!-- MONTH / YEAR NAVIGATOR -->
+        <div class="flex items-center gap-3">
+            {% set prev_month = month - 1 if month > 1 else 12 %}
+            {% set prev_year = year if month > 1 else year - 1 %}
+            {% set next_month = month + 1 if month < 12 else 1 %}
+            {% set next_year = year if month < 12 else year + 1 %}
+
+            <a href="{{ url_for('workers.worker_calendar', worker_id=worker.id, year=prev_year, month=prev_month) }}" class="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-800 transition">
+                ← Prev
+            </a>
+            <span class="text-sm font-black text-brand">{{ month_name }} {{ year }}</span>
+            <a href="{{ url_for('workers.worker_calendar', worker_id=worker.id, year=next_year, month=next_month) }}" class="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-800 transition">
+                Next →
+            </a>
+        </div>
+    </div>
+
+    <!-- METRICS CARDS -->
+    <div class="grid grid-cols-4 gap-4 text-xs">
+        <div class="bg-lightCard dark:bg-darkCard p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-slate-400 font-semibold">Days Worked This Month</div>
+            <div class="text-xl font-black text-emerald-400 mt-1">{{ days_worked }} days</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Saturdays count as 0.5</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-slate-400 font-semibold">Days Off Logged</div>
+            <div class="text-xl font-black text-red-400 mt-1">{{ days_off }} days</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Unpaid absence</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-slate-400 font-semibold">Paid Leave (Congé) Earned</div>
+            <div class="text-xl font-black text-blue-400 mt-1">{{ total_conge_earned }} days</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">0.5 days / month employed</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-slate-400 font-semibold">Remaining Leave Balance</div>
+            <div class="text-xl font-black text-brand mt-1">{{ remaining_conge }} days</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Used: {{ conge_days }} days</div>
+        </div>
+    </div>
+
+    <!-- CALENDAR GRID -->
+    <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        
+        <!-- DAYS HEADER -->
+        <div class="grid grid-cols-7 gap-3 text-center text-xs font-bold text-slate-400 border-b border-slate-800 pb-3">
+            <div>Monday</div>
+            <div>Tuesday</div>
+            <div>Wednesday</div>
+            <div>Thursday</div>
+            <div>Friday</div>
+            <div class="text-amber-400">Saturday (Half)</div>
+            <div class="text-slate-600 uppercase">Sunday (Rest Day)</div>
+        </div>
+
+        <!-- WEEKS ROWS -->
+        <div class="space-y-3">
+            {% for week in month_days %}
+            <div class="grid grid-cols-7 gap-3">
+                {% for day in week %}
+                    {% if day == 0 %}
+                        <div class="p-4 bg-slate-950/30 rounded-2xl border border-slate-900/50"></div>
+                    {% else %}
+                        {% set is_sunday = (loop.index == 7) %}
+                        {% set current_status = attendance_dict.get(day, '') %}
+
+                        {% if is_sunday %}
+                            <!-- SUNDAY: PERMANENTLY OFF (NO ACTION BUTTONS) -->
+                            <div class="p-3 bg-slate-950/60 border border-slate-900 rounded-2xl flex flex-col justify-between space-y-2 opacity-50">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-black text-slate-500">{{ day }}</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-900 text-slate-600">
+                                        REST
+                                    </span>
+                                </div>
+                                <div class="py-2 text-[10px] text-center font-bold text-slate-600 uppercase tracking-widest">
+                                    OFF
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- MONDAY - SATURDAY: INTERACTIVE ATTENDANCE CARDS -->
+                            <div class="p-3 bg-slate-900/70 border border-slate-800/80 rounded-2xl flex flex-col justify-between space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-black text-slate-200">{{ day }}</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md 
+                                        {% if current_status == 'Worked' %} bg-emerald-500/20 text-emerald-400
+                                        {% elif current_status == 'DayOff' %} bg-red-500/20 text-red-400
+                                        {% elif current_status == 'Congé' %} bg-blue-500/20 text-blue-400
+                                        {% else %} text-slate-500 {% endif %}">
+                                        {{ current_status or 'Unset' }}
+                                    </span>
+                                </div>
+
+                                <!-- ACTIVE STATUS FORM FOR ADMIN -->
+                                <form action="{{ url_for('workers.set_worker_attendance', worker_id=worker.id) }}" method="POST" class="grid grid-cols-3 gap-1 pt-1">
+                                    <input type="hidden" name="day" value="{{ day }}">
+                                    <input type="hidden" name="month" value="{{ month }}">
+                                    <input type="hidden" name="year" value="{{ year }}">
+
+                                    <button type="submit" name="status" value="Worked" title="Mark Present / Worked" 
+                                        class="py-1 text-[10px] font-bold rounded-lg border transition text-center
+                                        {% if current_status == 'Worked' %} bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/20
+                                        {% else %} bg-slate-800/80 text-slate-400 border-slate-700/60 hover:bg-emerald-500/20 hover:text-emerald-400 {% endif %}">
+                                        ✓
+                                    </button>
+
+                                    <button type="submit" name="status" value="DayOff" title="Mark Day Off / Absence" 
+                                        class="py-1 text-[10px] font-bold rounded-lg border transition text-center
+                                        {% if current_status == 'DayOff' %} bg-red-500 text-white border-red-400 shadow-md shadow-red-500/20
+                                        {% else %} bg-slate-800/80 text-slate-400 border-slate-700/60 hover:bg-red-500/20 hover:text-red-400 {% endif %}">
+                                        ✕
+                                    </button>
+
+                                    <button type="submit" name="status" value="Congé" title="Mark Paid Leave (Congé)" 
+                                        class="py-1 text-[10px] font-bold rounded-lg border transition text-center
+                                        {% if current_status == 'Congé' %} bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20
+                                        {% else %} bg-slate-800/80 text-slate-400 border-slate-700/60 hover:bg-blue-500/20 hover:text-blue-400 {% endif %}">
+                                        🏖️
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

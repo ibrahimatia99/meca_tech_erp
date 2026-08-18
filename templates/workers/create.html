@@ -1,0 +1,94 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Add New Worker</h2>
+            <p class="text-xs text-slate-400">Register employee profile and optionally generate login credentials.</p>
+        </div>
+        <a href="{{ url_for('workers.workers_list') }}" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">← Back</a>
+    </div>
+
+    <form action="{{ url_for('workers.worker_create') }}" method="POST" class="space-y-6">
+        
+        <!-- WORKER BASIC INFO -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <h3 class="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2">Employee Personal Details</h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name *</label>
+                    <input type="text" name="full_name" required placeholder="e.g. Mohamed Ali" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Job Title / Role *</label>
+                    <input type="text" name="role" required placeholder="e.g. CNC Operator / Welder" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                    <input type="text" name="phone" placeholder="+216 -- --- ---" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">CIN Number</label>
+                    <input type="text" name="cin_number" placeholder="12345678" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Base Monthly Salary (TND) *</label>
+                    <input type="number" step="any" name="monthly_rate" required placeholder="800.000" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-brand">
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTIONAL USER ACCOUNT SETUP -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                <input type="checkbox" id="create_account_check" name="create_system_account" onchange="toggleAccountFields()" class="rounded border-slate-800 text-brand focus:ring-brand">
+                <label for="create_account_check" class="text-sm font-bold text-slate-100 cursor-pointer">Create System User Account for this Worker</label>
+            </div>
+
+            <div id="account-fields" class="hidden space-y-4 pt-2">
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Username *</label>
+                        <input type="text" name="account_username" placeholder="m.ali" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Email Address</label>
+                        <input type="email" name="account_email" placeholder="m.ali@mecatechatia.tn" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Account Password *</label>
+                        <input type="password" name="account_password" placeholder="••••••••" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100">
+                    </div>
+                </div>
+
+                <div class="flex gap-6 text-xs text-slate-300 pt-2">
+                    <label class="flex items-center gap-2"><input type="checkbox" name="can_manage_stock"> Can Update Stock</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="can_manage_machines"> Can Access Machinery</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition">
+            Save Worker & Create Account
+        </button>
+    </form>
+</div>
+
+<script>
+function toggleAccountFields() {
+    const check = document.getElementById('create_account_check');
+    const fields = document.getElementById('account-fields');
+    if (check.checked) {
+        fields.classList.remove('hidden');
+    } else {
+        fields.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}

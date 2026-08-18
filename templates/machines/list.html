@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Machinery & Equipment</h2>
+            <p class="text-xs text-slate-400">Manage workshop machines, track status, and view maintenance logs.</p>
+        </div>
+        <a href="{{ url_for('machines.machine_create') }}" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
+            + Add New Machine
+        </a>
+    </div>
+
+    <!-- MACHINES LIST -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-900 text-slate-400 font-bold uppercase border-b border-slate-800">
+                    <tr>
+                        <th class="p-4">Machine Name</th>
+                        <th class="p-4">Model / Type</th>
+                        <th class="p-4">Serial Number</th>
+                        <th class="p-4">Status</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80">
+                    {% for machine in machines %}
+                    <tr class="hover:bg-slate-800/30 transition group">
+                        <td class="p-4">
+                            <div class="font-bold text-slate-100 text-sm">{{ machine.name }}</div>
+                            {% if machine.notes %}
+                            <div class="text-[10px] text-slate-500 mt-0.5 truncate max-w-xs">{{ machine.notes }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-slate-300 font-semibold">
+                            {{ machine.model_type or 'N/A' }}
+                        </td>
+                        <td class="p-4 text-slate-400 font-mono text-[11px]">
+                            {{ machine.serial_number or 'Unknown' }}
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold border 
+                                {% if machine.status == 'Operational' %} bg-emerald-500/10 text-emerald-400 border-emerald-500/20
+                                {% elif machine.status == 'Needs Repair' or machine.status == 'Maintenance' %} bg-amber-500/10 text-amber-400 border-amber-500/20
+                                {% else %} bg-red-500/10 text-red-400 border-red-500/20 {% endif %}">
+                                {{ machine.status }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right space-x-3">
+                            <a href="{{ url_for('machines.machine_detail', machine_id=machine.id) }}" class="text-brand hover:text-brandHover font-bold transition">View Logs</a>
+                            <a href="{{ url_for('machines.machine_edit', machine_id=machine.id) }}" class="text-slate-400 hover:text-white font-bold transition">Edit</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-slate-500">
+                            No machines added to the workshop yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

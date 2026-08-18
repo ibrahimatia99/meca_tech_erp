@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- HEADER & FILTERS -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Commercial Documents (Devis, Invoices & Delivery Notes)</h2>
+            <p class="text-xs text-slate-400">Manage all client documents, track payments, and print official PDFs.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <form method="GET" action="{{ url_for('quotes.quotes_list') }}" class="flex items-center gap-2">
+                <select name="year" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    <option value="">All Years</option>
+                    {% for yr in available_years %}
+                    <option value="{{ yr }}" {% if selected_year == yr %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+                <select name="month" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    <option value="">All Months</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ calendar.month_name[m] if calendar is defined else m }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{{ url_for('quotes.quote_create') }}" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20 whitespace-nowrap">
+                + Create Document
+            </a>
+        </div>
+    </div>
+
+    <!-- PERIOD FINANCIAL OVERVIEW -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-xs font-semibold text-slate-400">Period Total Billed (Approved)</div>
+            <div class="text-xl font-black text-slate-100 mt-0.5">{{ "{:,.3f}".format(period_total) }} <span class="text-xs">TND</span></div>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="text-xs font-semibold text-slate-400">Total Collected in Period</div>
+            <div class="text-xl font-black text-emerald-400 mt-0.5">{{ "{:,.3f}".format(period_paid) }} <span class="text-xs">TND</span></div>
+        </div>
+    </div>
+
+    <!-- DOCUMENTS LIST TABLE -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase bg-slate-900/50">
+                        <th class="p-4">Reference</th>
+                        <th class="p-4">Client</th>
+                        <th class="p-4">Date</th>
+                        <th class="p-4">Total Amount</th>
+                        <th class="p-4">Status</th>
+                        <th class="p-4">Payment</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-xs">
+                    {% for q in quotes %}
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="p-4 font-mono font-bold text-brand">{{ q.quote_number }}</td>
+                        <td class="p-4 font-bold text-slate-200">{{ q.client.company_name if q.client else 'Walk-in Client' }}</td>
+                        <td class="p-4 text-slate-400">{{ q.date_created.strftime('%d/%m/%Y') }}</td>
+                        <td class="p-4 font-black text-slate-100">{{ "{:,.3f}".format(q.total_amount) }} TND</td>
+                        
+                        <!-- STATUS BADGE -->
+                        <td class="p-4">
+                            <form action="{{ url_for('quotes.update_quote_status', quote_id=q.id) }}" method="POST">
+                                <select name="status" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] font-bold {% if q.status == 'Approved' %}text-emerald-400{% elif q.status == 'Rejected' %}text-red-400{% else %}text-amber-400{% endif %} focus:outline-none">
+                                    <option value="Draft" {% if q.status == 'Draft' %}selected{% endif %}>Draft</option>
+                                    <option value="Approved" {% if q.status == 'Approved' %}selected{% endif %}>Approved</option>
+                                    <option value="Rejected" {% if q.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                </select>
+                            </form>
+                        </td>
+
+                        <!-- PAYMENT STATUS -->
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase {% if q.payment_status == 'Paid' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% elif q.payment_status == 'Partial' %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% else %}bg-red-500/10 text-red-400 border border-red-500/20{% endif %}">
+                                {{ q.payment_status }}
+                            </span>
+                        </td>
+
+                        <!-- ACTIONS -->
+                        <td class="p-4 text-right space-x-1 whitespace-nowrap">
+                            <!-- All 3 Print Options: Devis, Facture, BL -->
+                            <a href="{{ url_for('quotes.quote_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold transition">Print Devis</a>
+                            <a href="{{ url_for('quotes.invoice_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold transition">Print Facture</a>
+                            <a href="{{ url_for('quotes.bon_livraison_print', quote_id=q.id) }}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold transition">Print BL</a>
+
+                            <a href="{{ url_for('quotes.quote_edit', quote_id=q.id) }}" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-bold transition">Edit</a>
+
+                            <button onclick="document.getElementById('payment-modal-{{ q.id }}').classList.toggle('hidden')" class="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[11px] font-bold transition">
+                                Payments
+                            </button>
+
+                            <form action="{{ url_for('quotes.quote_delete', quote_id=q.id) }}" method="POST" class="inline" onsubmit="return confirm('Delete document {{ q.quote_number }}?');">
+                                <button type="submit" class="px-2 py-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg text-[11px] font-bold transition">×</button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- PAYMENT MODAL ROW -->
+                    <tr id="payment-modal-{{ q.id }}" class="hidden bg-slate-950/80">
+                        <td colspan="7" class="p-4 space-y-4">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <div class="text-xs font-bold text-slate-200">Payment History for {{ q.quote_number }} (Total: {{ "{:,.3f}".format(q.total_amount) }} TND | Paid: <span class="text-emerald-400">{{ "{:,.3f}".format(q.amount_paid) }} TND</span>)</div>
+                                <button onclick="document.getElementById('payment-modal-{{ q.id }}').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold">&times;</button>
+                            </div>
+
+                            <!-- ADD PAYMENT FORM -->
+                            <form action="{{ url_for('quotes.add_quote_payment', quote_id=q.id) }}" method="POST" class="flex gap-2">
+                                <input type="number" step="0.001" name="add_amount" placeholder="Amount (TND)" required class="w-32 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                                <input type="text" name="payment_method" placeholder="Method (Cash, Check #)" value="Espèces / Chèque" class="w-48 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                                <input type="text" name="notes" placeholder="Notes" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                                <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-xs hover:bg-emerald-500 transition">Add Payment</button>
+                            </form>
+
+                            <!-- EXISTING PAYMENTS LIST -->
+                            {% if q.payments %}
+                            <div class="space-y-1 pt-2">
+                                {% for pay in q.payments %}
+                                <div class="flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+                                    <div class="flex items-center gap-3">
+                                        <span class="font-bold text-emerald-400">{{ "{:,.3f}".format(pay.amount) }} TND</span>
+                                        <span class="text-slate-400">({{ pay.payment_method }})</span>
+                                        <span class="text-slate-500 text-[11px]">{{ pay.notes }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] text-slate-500">{{ pay.payment_date.strftime('%d/%m/%Y %H:%M') }}</span>
+                                        <form action="{{ url_for('quotes.delete_quote_payment', payment_id=pay.id) }}" method="POST" onsubmit="return confirm('Remove this payment?');">
+                                            <button type="submit" class="text-red-400 hover:text-white font-bold text-xs">×</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-12 text-slate-500">No commercial documents found for this period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

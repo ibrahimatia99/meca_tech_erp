@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Include Chart.js for Financial Graphs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="space-y-6">
+    <!-- HEADER -->
+    <div class="flex justify-between items-end border-b border-slate-800 pb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Enterprise Dashboard</h2>
+            <p class="text-xs text-slate-400">Overview of your revenue, workshop activity, and financial health.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('quotes.quote_create') }}" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
+                + New Quote / Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- KEY METRICS CARDS -->
+    <div class="grid grid-cols-4 gap-4 text-xs">
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="font-semibold text-slate-400">Total Billed + Cash</div>
+            <div class="text-2xl font-black text-slate-100 mt-1">{{ "{:,.3f}".format(total_revenue) }} <span class="text-sm">TND</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Lifetime Revenue Generated</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="font-semibold text-slate-400">Total Collected</div>
+            <div class="text-2xl font-black text-emerald-400 mt-1">{{ "{:,.3f}".format(total_collected) }} <span class="text-sm">TND</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Cash & Paid Invoices</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="font-semibold text-slate-400">Outstanding Balance</div>
+            <div class="text-2xl font-black text-amber-400 mt-1">{{ "{:,.3f}".format(outstanding_balance) }} <span class="text-sm">TND</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Unpaid Approved Invoices</div>
+        </div>
+
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="font-semibold text-slate-400">Total Direct Cash</div>
+            <div class="text-2xl font-black text-brand mt-1">{{ "{:,.3f}".format(total_direct_cash) }} <span class="text-sm">TND</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Uninvoiced Cash Entries</div>
+        </div>
+    </div>
+
+    <!-- CHART & QUICK ACTIONS GRID -->
+    <div class="grid grid-cols-3 gap-6">
+        
+        <!-- FINANCIAL CHART -->
+        <div class="col-span-2 bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <h3 class="text-sm font-bold text-slate-100 border-b border-slate-800 pb-3 mb-4">📈 Revenue vs Expenses (Current Year)</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- QUICK LOG FORMS (CASH & EXPENSES) -->
+        <div class="space-y-6">
+            <!-- LOG EXPENSE -->
+            <form action="{{ url_for('expenses.add_expense') }}" method="POST" class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h3 class="text-xs font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <span class="text-red-400">💳</span> Quick Log Expense
+                </h3>
+                <div>
+                    <input type="text" name="description" placeholder="Description (e.g. Steel, Tools)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-red-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <select name="category" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-slate-200 focus:border-red-500 focus:outline-none">
+                        <option value="Materials">Materials</option>
+                        <option value="Tools">Tools</option>
+                        <option value="Logistics">Logistics</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="number" step="0.001" name="amount" placeholder="Amount (TND)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-red-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/20 font-bold rounded-lg text-xs hover:bg-red-500 hover:text-white transition">
+                    Log Expense
+                </button>
+            </form>
+
+            <!-- LOG CASH -->
+            <form action="{{ url_for('cash.add_direct_cash') }}" method="POST" class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h3 class="text-xs font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <span class="text-emerald-400">💵</span> Quick Log Cash
+                </h3>
+                <div>
+                    <input type="text" name="description" placeholder="Service / Item sold" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" name="source_client" placeholder="Client Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                    <input type="number" step="0.001" name="amount" placeholder="Amount (TND)" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold rounded-lg text-xs hover:bg-emerald-500 hover:text-white transition">
+                    Log Direct Cash
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LISTS GRID (EXPENSES, CASH, ACTIVITY) -->
+    <div class="grid grid-cols-3 gap-6">
+        
+        <!-- RECENT EXPENSES -->
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col h-96">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-slate-100">💳 Recent Expenses</h3>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded font-bold">{{ expenses_log|length }} Total</span>
+            </div>
+            <div class="space-y-2 overflow-y-auto pr-2 flex-1">
+                {% for exp in expenses_log %}
+                <div class="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800 transition hover:bg-slate-800/50">
+                    <div class="min-w-0 pr-2">
+                        <div class="font-bold text-slate-200 text-xs truncate">{{ exp.description }}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">{{ exp.category }} • {{ exp.date_logged.strftime('%d %b %y') }}</div>
+                    </div>
+                    <div class="font-bold text-red-400 text-xs whitespace-nowrap">-{{ "{:,.3f}".format(exp.amount) }}</div>
+                </div>
+                {% else %}
+                <div class="text-center py-6 text-xs text-slate-500 italic">No expenses recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- RECENT CASH INCOME (WITH EDIT & DELETE) -->
+        <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col h-96">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-slate-100">💵 Recent Cash Flow</h3>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded font-bold">{{ direct_cash_entries|length }} Total</span>
+            </div>
+            <div class="space-y-2 overflow-y-auto pr-2 flex-1">
+                {% for cash in direct_cash_entries %}
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-800 transition hover:bg-slate-800/50 space-y-2">
+                    <div class="flex justify-between items-start">
+                        <div class="min-w-0 pr-2">
+                            <div class="font-bold text-slate-200 text-xs truncate">{{ cash.description }}</div>
+                            <div class="text-[10px] text-slate-500 mt-0.5">{{ cash.source_client }} • {{ cash.date_received.strftime('%d %b %y') }}</div>
+                        </div>
+                        <div class="font-bold text-emerald-400 text-xs whitespace-nowrap">+{{ "{:,.3f}".format(cash.amount) }}</div>
+                    </div>
+
+                    <!-- Edit/Delete Action Bar -->
+                    <div class="flex justify-end gap-2 pt-1 border-t border-slate-800/60">
+                        <!-- Toggle Edit Form Button -->
+                        <button onclick="document.getElementById('edit-cash-{{ cash.id }}').classList.toggle('hidden')" class="text-[10px] font-bold text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded transition">
+                            Edit
+                        </button>
+                        <!-- Delete Form -->
+                        <form action="{{ url_for('cash.delete_direct_cash', cash_id=cash.id) }}" method="POST" onsubmit="return confirm('Delete this cash entry?');">
+                            <button type="submit" class="text-[10px] font-bold text-red-400 hover:text-white bg-red-500/10 px-2 py-0.5 rounded transition">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Inline Edit Form (Hidden by default) -->
+                    <div id="edit-cash-{{ cash.id }}" class="hidden pt-2 border-t border-slate-800">
+                        <form action="{{ url_for('cash.edit_direct_cash', cash_id=cash.id) }}" method="POST" class="space-y-2">
+                            <input type="text" name="description" value="{{ cash.description }}" required class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" name="source_client" value="{{ cash.source_client }}" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
+                                <input type="number" step="0.001" name="amount" value="{{ cash.amount }}" required class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <button type="submit" class="bg-emerald-600 text-white text-[10px] font-bold px-3 py-1 rounded hover:bg-emerald-500">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-6 text-xs text-slate-500 italic">No direct cash logged yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ALERTS & SYSTEM ACTIVITY -->
+        <div class="space-y-6 flex flex-col h-96">
+            <!-- ALERTS SECTION -->
+            {% if low_stock_count > 0 or maintenance_machines|length > 0 %}
+            <div class="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/20 shrink-0">
+                <h3 class="text-sm font-bold text-amber-400 border-b border-amber-500/20 pb-2 mb-2">⚠️ System Alerts</h3>
+                <div class="space-y-2 text-xs">
+                    {% if low_stock_count > 0 %}
+                    <a href="{{ url_for('stock.stock_list') }}" class="flex items-center justify-between text-amber-300 hover:text-white transition">
+                        <span>Low Stock Items Detected</span>
+                        <span class="font-bold bg-amber-500 text-slate-900 px-2 rounded">{{ low_stock_count }}</span>
+                    </a>
+                    {% endif %}
+                    {% if maintenance_machines|length > 0 %}
+                    <a href="{{ url_for('machines.machines_list') }}" class="flex items-center justify-between text-amber-300 hover:text-white transition">
+                        <span>Machines Requiring Service</span>
+                        <span class="font-bold bg-amber-500 text-slate-900 px-2 rounded">{{ maintenance_machines|length }}</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ACTIVITY FEED -->
+            <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex-1 flex flex-col min-h-0">
+                <div class="border-b border-slate-800 pb-3 mb-3 shrink-0">
+                    <h3 class="text-sm font-bold text-slate-100">📡 System Activity Log</h3>
+                </div>
+                <div class="space-y-3 overflow-y-auto pr-2 flex-1">
+                    {% for log in activity_feed %}
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5 {{ log.color }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">{{ log.event_title }}</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">{{ log.event_desc }}</div>
+                            <div class="text-[9px] text-slate-500 font-mono mt-1">{{ log.date_created.strftime('%d/%m/%Y %H:%M') }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-xs text-slate-500 italic">No activity logged yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Chart Initialization Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        
+        const rawMonths = JSON.parse('{{ month_names_json|safe }}');
+        const rawRevenue = JSON.parse('{{ monthly_revenue_json|safe }}');
+        const rawExpenses = JSON.parse('{{ monthly_expenses_json|safe }}');
+        const brandColor = '{{ app_theme_color or "#FF5500" }}';
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: rawMonths,
+                datasets: [
+                    {
+                        label: 'Total Revenue (TND)',
+                        data: rawRevenue,
+                        backgroundColor: brandColor,
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    },
+                    {
+                        label: 'Total Expenses (TND)',
+                        data: rawExpenses,
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94a3b8', font: { size: 10, family: 'system-ui' } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0F172A',
+                        titleColor: '#F8FAFC',
+                        bodyColor: '#CBD5E1',
+                        borderColor: '#1E293B',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 3 }).format(context.parsed.y) + ' TND';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#1E293B', drawBorder: false },
+                        ticks: { color: '#64748B', font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: '#1E293B', drawBorder: false },
+                        ticks: { color: '#64748B', font: { size: 10 } },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche de Paie — {{ worker.full_name }} — {{ month_name }} {{ year }}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '{{ app_theme_color or "#FF5500" }}',
+                        darkBg: '#090D16',
+                        darkCard: '#0F172A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .print-card { background: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: black !important; }
+            .print-border { border-color: #cbd5e1 !important; }
+            .print-text { color: black !important; }
+            .print-muted { color: #475569 !important; }
+            .print-bg-header { background: #f1f5f9 !important; color: black !important; }
+            .print-table-border { border: 1px solid #94a3b8 !important; }
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen p-8 antialiased">
+
+    <!-- PRINT ACTION BAR -->
+    <div class="no-print max-w-4xl mx-auto mb-6 flex justify-between items-center bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400">Bulletin de paie généré pour:</span>
+            <span class="text-xs font-black text-brand">{{ worker.full_name }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="px-5 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:opacity-90 transition shadow-lg shadow-brand/20">
+                🖨️ Imprimer / Exporter PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN BULLETIN DE PAIE CONTAINER -->
+    <div class="max-w-4xl mx-auto bg-darkCard border border-slate-800 rounded-2xl p-8 space-y-6 shadow-2xl print-card print-table-border">
+        
+        <!-- HEADER: COMPANY & SALARIÉ HEADER -->
+        <div class="grid grid-cols-2 gap-6 pb-6 border-b border-slate-800 print-border">
+            
+            <!-- COMPANY METADATA BOX -->
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 print-card">
+                <div class="flex items-center gap-3">
+                    {% if brand_logo %}
+                    <img src="{{ brand_logo }}" alt="Logo" class="h-8 w-auto object-contain">
+                    {% endif %}
+                    <div>
+                        <h1 class="text-sm font-black uppercase text-slate-100 print-text">{{ brand_name }}</h1>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase print-muted">Atelier de Fabrication Mécanique</p>
+                    </div>
+                </div>
+                <div class="text-[11px] text-slate-400 space-y-0.5 pt-2 print-muted">
+                    <div><strong>Adresse:</strong> {{ brand_address }}</div>
+                    <div><strong>Téléphone:</strong> {{ brand_phone }}</div>
+                    <div><strong>Email:</strong> {{ brand_email }}</div>
+                    <div><strong>Matricule Fiscale:</strong> {{ brand_tax_id }}</div>
+                </div>
+            </div>
+
+            <!-- BULLETIN TITLE & PERIOD -->
+            <div class="text-right space-y-3">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-100 tracking-tight print-text">Fiche de paie</h2>
+                    <p class="text-xs font-bold text-brand print-text">Période: {{ month_name }} {{ year }}</p>
+                </div>
+
+                <!-- SALARIÉ INFO -->
+                <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-left space-y-1 print-card">
+                    <div class="text-[10px] font-bold uppercase text-slate-500 print-muted">Information Salarié</div>
+                    <div class="text-sm font-bold text-slate-100 print-text">{{ worker.full_name }}</div>
+                    <div class="text-[11px] text-slate-400 print-muted">Poste / Emploi: <strong class="text-slate-200 print-text">{{ worker.role }}</strong></div>
+                    <div class="text-[11px] text-slate-400 print-muted">CIN: <strong class="text-slate-200 print-text">{{ worker.cin_number or 'N/A' }}</strong> | Tél: {{ worker.phone or 'N/A' }}</div>
+                    <div class="text-[11px] text-slate-400 print-muted">Date d'embauche: {{ worker.hire_date.strftime('%d/%m/%Y') if worker.hire_date else 'N/A' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN PAYROLL RUBRIQUES TABLE -->
+        <div class="overflow-hidden rounded-xl border border-slate-800 print-border">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-900 text-slate-400 font-bold uppercase border-b border-slate-800 print-bg-header">
+                    <tr>
+                        <th class="p-3 w-5/12">Rubriques</th>
+                        <th class="p-3 text-center">Jours Travaillés</th>
+                        <th class="p-3 text-right">Base (TND)</th>
+                        <th class="p-3 text-right">Cot. / Deduct.</th>
+                        <th class="p-3 text-right">Net Partiel</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80 print-border">
+                    <!-- SALAIRE DE BASE -->
+                    <tr class="font-bold">
+                        <td class="p-3 text-slate-100 print-text">SALAIRE DE BASE MENSUEL</td>
+                        <td class="p-3 text-center text-emerald-400 font-black print-text">{{ days_worked if days_worked else '-' }} j</td>
+                        <td class="p-3 text-right text-slate-200 print-text">{{ "{:,.3f}".format(worker.monthly_rate) }}</td>
+                        <td class="p-3 text-right text-slate-400 print-muted">-</td>
+                        <td class="p-3 text-right text-emerald-400 font-black print-text">{{ "{:,.3f}".format(worker.monthly_rate) }} TND</td>
+                    </tr>
+
+                    <!-- SALAIRE BRUT -->
+                    <tr class="bg-slate-900/40 font-bold print-bg-header">
+                        <td class="p-3 text-slate-300 print-text">SALAIRE BRUT TOTAL</td>
+                        <td class="p-3 text-center text-slate-300 print-text">{{ days_worked if days_worked else '-' }} j</td>
+                        <td class="p-3 text-right text-slate-300 print-text">{{ "{:,.3f}".format(worker.monthly_rate) }}</td>
+                        <td class="p-3 text-right text-slate-400 print-muted">-</td>
+                        <td class="p-3 text-right text-slate-100 font-black print-text">{{ "{:,.3f}".format(worker.monthly_rate) }} TND</td>
+                    </tr>
+
+                    <!-- RETENUES / AVANCES SECTION HEADER -->
+                    <tr class="bg-slate-950/60 print-bg-header">
+                        <td colspan="5" class="px-3 py-2 font-black text-[10px] text-amber-400 uppercase tracking-wider">
+                            RETENUES SUR SALAIRE & AVANCES COMPTANTS
+                        </td>
+                    </tr>
+
+                    {% for adv in advances %}
+                    <tr>
+                        <td class="p-3 text-slate-300 print-text">
+                            Avance sur salaire ({{ adv.date_given.strftime('%d/%m/%Y') }})
+                            {% if adv.notes %}<span class="text-slate-500 text-[10px] block print-muted">{{ adv.notes }}</span>{% endif %}
+                        </td>
+                        <td class="p-3 text-center text-slate-500 print-muted">-</td>
+                        <td class="p-3 text-right text-slate-400 print-muted">{{ "{:,.3f}".format(adv.amount) }}</td>
+                        <td class="p-3 text-right text-amber-400 font-bold print-text">-{{ "{:,.3f}".format(adv.amount) }}</td>
+                        <td class="p-3 text-right text-slate-500 print-muted">-</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-3 text-slate-500 italic text-center print-muted">Aucune avance ou retenue enregistrée pour cette période.</td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- TOTAL RETENUES -->
+                    <tr class="bg-slate-900/40 font-bold print-bg-header">
+                        <td colspan="3" class="p-3 text-slate-300 print-text uppercase">TOTAL DES RETENUES ET AVANCES</td>
+                        <td class="p-3 text-right text-amber-400 font-black print-text">-{{ "{:,.3f}".format(total_advances) }} TND</td>
+                        <td class="p-3 text-right text-slate-400 print-muted">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- LOWER METRICS SUMMARY GRID -->
+        <div class="grid grid-cols-3 gap-4">
+            
+            <!-- CONGÉS PAYÉS CARD -->
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 print-card">
+                <div class="text-[10px] font-bold text-slate-500 uppercase print-muted">Congés Payés</div>
+                <div class="flex justify-between text-xs pt-1">
+                    <span class="text-slate-400 print-muted">Cumul Acquis:</span>
+                    <span class="font-bold text-slate-200 print-text">0.5 j / mois</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-slate-400 print-muted">Solde Restant:</span>
+                    <span class="font-bold text-emerald-400 print-text">Actif</span>
+                </div>
+            </div>
+
+            <!-- CUMUL HEURES & JOURS TRAVAILLÉS -->
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 print-card">
+                <div class="text-[10px] font-bold text-slate-500 uppercase print-muted">Période d'Activité</div>
+                <div class="flex justify-between text-xs pt-1">
+                    <span class="text-slate-400 print-muted">Jours Effectués:</span>
+                    <span class="font-black text-emerald-400 print-text">{{ days_worked }} jours</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-slate-400 print-muted">Mode de Paiement:</span>
+                    <span class="font-bold text-slate-200 print-text">Espèces / Chèque</span>
+                </div>
+            </div>
+
+            <!-- NET À PAYER FINAL BOX -->
+            <div class="p-4 rounded-xl bg-brand/10 border-2 border-brand space-y-1 text-right print-card">
+                <div class="text-[10px] font-black uppercase text-brand tracking-wider">NET À PAYER SALARIÉ</div>
+                <div class="text-2xl font-black text-brand">{{ "{:,.3f}".format(net_salary) }} TND</div>
+            </div>
+        </div>
+
+        <!-- AMOUNT IN WORDS -->
+        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 print-card print-text">
+            <strong>Arrêté le présent bulletin à la somme de :</strong>
+            <span class="italic text-slate-100 font-semibold print-text">{{ net_in_words }}</span>.
+        </div>
+
+        <!-- FOOTER SIGNATURES -->
+        <div class="pt-8 border-t border-slate-800 print-border flex justify-between text-xs font-bold uppercase text-slate-400 print-muted">
+            <div class="text-center w-1/3 space-y-12">
+                <div>Signature & Cachet Employeur</div>
+                <div class="text-[10px] text-slate-600 print-muted">(MECA-TECH ATIA)</div>
+            </div>
+            <div class="text-center w-1/3 space-y-12">
+                <div>Signature du Salarié</div>
+                <div class="text-[10px] text-slate-600 print-muted">(Bon pour accord)</div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto pb-12">
+    <!-- HEADER -->
+    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Create Commercial Document</h2>
+            <p class="text-xs text-slate-400">Generate a Devis, Facture, or Bon de Livraison with optional TVA and full workshop specifications.</p>
+        </div>
+        <a href="{{ url_for('quotes.quotes_list') }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition">
+            &larr; Back to Documents
+        </a>
+    </div>
+
+    <form action="{{ url_for('quotes.quote_create') }}" method="POST" class="space-y-6">
+        
+        <!-- DOCUMENT TYPE & TVA CONFIGURATION -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Document Type *</label>
+                <select name="doc_type" id="doc_type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    <option value="devis">Devis (DEV)</option>
+                    <option value="facture">Facture (FAC)</option>
+                    <option value="bl">Bon de Livraison (BL)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center pt-5">
+                <label class="flex items-center gap-3 cursor-pointer bg-slate-950/60 px-4 py-2.5 rounded-xl border border-slate-800 w-full">
+                    <input type="checkbox" name="apply_tva" checked class="w-4 h-4 rounded bg-slate-950 border-slate-800 text-brand focus:ring-0">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200">Apply TVA (19%) & Timbre Fiscal</div>
+                        <div class="text-[10px] text-slate-400">Uncheck to display prices as HT (Hors Taxes)</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- CLIENT & REFERENCE -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Select Client *</label>
+                <select name="client_id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    <option value="">-- Choose Client --</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.company_name }} ({{ client.contact_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Custom Document Number (Optional)</label>
+                <input type="text" name="quote_number" placeholder="Leave blank for automatic (DEV/FAC/BL-MTA-MM-SEQ)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+            </div>
+        </div>
+
+        <!-- LINE ITEMS TABLE -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-slate-100">Line Items & Specifications</h3>
+                <span class="text-[10px] text-slate-400">Add materials, fabrication steps, or services</span>
+            </div>
+            
+            <div id="items-container" class="space-y-3">
+                <div class="grid grid-cols-12 gap-3 item-row items-center">
+                    <div class="col-span-6">
+                        <input type="text" name="item_description[]" placeholder="Description / Article Specification" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" step="0.01" name="item_quantity[]" placeholder="Qty" value="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" step="0.001" name="item_rate[]" placeholder="Unit Price (TND)" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                    </div>
+                    <div class="col-span-1 flex items-center justify-center">
+                        <button type="button" onclick="this.closest('.item-row').remove()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 font-bold hover:bg-red-500 hover:text-white transition flex items-center justify-center">&times;</button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="addItemRow()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition">
+                + Add Another Item
+            </button>
+        </div>
+
+        <!-- TERMS & CONDITIONS -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Payment Terms (Modalité de paiement)</label>
+                    <input type="text" name="payment_terms" value="Paiement à la livraison / Chèque" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Offer Validity (Validité de l'offre)</label>
+                    <input type="text" name="validite_offre" value="30 Jours" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Delivery Time (Délai de livraison)</label>
+                    <input type="text" name="delai_livraison" value="Selon disponibilité du stock / Planning atelier" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Shipping Mode (Mode d'expédition)</label>
+                    <input type="text" name="mode_expedition" value="Par nos soins / Transport client" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGISTICS & TRANSPORT DETAILS (BON DE LIVRAISON) -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <h3 class="text-sm font-bold text-slate-100">Transport & Driver Details (Optional for Bon de Livraison)</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Driver Name</label>
+                    <input type="text" name="driver_name" placeholder="Nom du chauffeur" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Driver CIN</label>
+                    <input type="text" name="driver_cin" placeholder="CIN du chauffeur" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Vehicle Number Plate</label>
+                    <input type="text" name="vehicle_plate" placeholder="Matricule véhicule" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+                </div>
+            </div>
+        </div>
+
+        <!-- DISCOUNT & REMARKS -->
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Global Discount (%)</label>
+                <input type="number" step="0.01" name="discount_rate" placeholder="0.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Remarks / Notes</label>
+                <input type="text" name="remarque" placeholder="Additional notes or remarks" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none">
+            </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="flex justify-end gap-3 pt-2">
+            <button type="submit" class="px-8 py-3 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
+                Generate Document
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function addItemRow() {
+    const container = document.getElementById('items-container');
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-12 gap-3 item-row items-center';
+    row.innerHTML = `
+        <div class="col-span-6"><input type="text" name="item_description[]" placeholder="Description / Article Specification" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none"></div>
+        <div class="col-span-2"><input type="number" step="0.01" name="item_quantity[]" placeholder="Qty" value="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none"></div>
+        <div class="col-span-3"><input type="number" step="0.001" name="item_rate[]" placeholder="Unit Price (TND)" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-brand focus:outline-none"></div>
+        <div class="col-span-1 flex items-center justify-center"><button type="button" onclick="this.closest('.item-row').remove()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 font-bold hover:bg-red-500 hover:text-white transition flex items-center justify-center">&times;</button></div>
+    `;
+    container.appendChild(row);
+}
+</script>
+{% endblock %}

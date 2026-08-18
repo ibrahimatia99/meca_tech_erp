@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h2 class="text-2xl font-bold">Financial Overview</h2>
+        <p class="text-xs text-slate-400">Total company revenue, cash collections, and outstanding receivables</p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-6">
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Billed Revenue</p>
+            <p class="text-3xl font-black text-slate-100">{{ "{:,.3f}".format(total_revenue) }} <span class="text-xs text-slate-500 font-semibold">TND</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Collected Payments</p>
+            <p class="text-3xl font-black text-green-400">{{ "{:,.3f}".format(total_collected) }} <span class="text-xs text-slate-500 font-semibold">TND</span></p>
+        </div>
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Outstanding Receivables</p>
+            <p class="text-3xl font-black text-brand">{{ "{:,.3f}".format(outstanding_balance) }} <span class="text-xs text-slate-500 font-semibold">TND</span></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
