@@ -1,8 +1,7 @@
+# models.py
 from datetime import datetime, date
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
-# Import the shared database instance from extensions.py to prevent circular imports
 from extensions import db
 
 
@@ -182,7 +181,7 @@ class MaintenanceLog(db.Model):
 
 
 # ---------------------------------------------------------------------------
-# 6. WORKERS & SALARY ADVANCES
+# 6. WORKERS, SALARY ADVANCES & PRIMES (BONUSES)
 # ---------------------------------------------------------------------------
 class Worker(db.Model):
     __tablename__ = 'workers'
@@ -194,9 +193,13 @@ class Worker(db.Model):
     phone = db.Column(db.String(50), nullable=True)
     cin_number = db.Column(db.String(50), nullable=True)
     monthly_rate = db.Column(db.Float, default=0.0)
+    salary_pay_day = db.Column(db.Integer, default=28)
+    last_payroll_processed = db.Column(db.String(7), nullable=True) # Format: "YYYY-MM"
     hire_date = db.Column(db.Date, default=date.today)
 
     user = db.relationship('User', backref=db.backref('worker_profile', uselist=False))
+    advances = db.relationship('SalaryAdvance', backref='worker', lazy=True, cascade='all, delete-orphan')
+    bonuses = db.relationship('WorkerBonus', backref='worker', lazy=True, cascade='all, delete-orphan')
 
 
 class SalaryAdvance(db.Model):
@@ -208,7 +211,16 @@ class SalaryAdvance(db.Model):
     date_given = db.Column(db.DateTime, default=datetime.now)
     notes = db.Column(db.String(255), nullable=True)
 
-    worker = db.relationship('Worker', backref=db.backref('advances', cascade='all, delete-orphan'))
+
+class WorkerBonus(db.Model):
+    __tablename__ = 'worker_bonuses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False, default=0.0)
+    title = db.Column(db.String(150), nullable=False, default="Performance Prime")
+    date_given = db.Column(db.DateTime, default=datetime.now)
+    notes = db.Column(db.String(255), nullable=True)
 
 
 class WorkerAttendance(db.Model):
@@ -223,7 +235,7 @@ class WorkerAttendance(db.Model):
 
 
 # ---------------------------------------------------------------------------
-# 7. DIRECT CASH INCOME (WITHOUT FACTURE)
+# 7. DIRECT CASH INCOME & EXPENSES
 # ---------------------------------------------------------------------------
 class DirectCashIncome(db.Model):
     __tablename__ = 'direct_cash_incomes'
@@ -236,9 +248,6 @@ class DirectCashIncome(db.Model):
     received_by = db.Column(db.String(100), nullable=True)
 
 
-# ---------------------------------------------------------------------------
-# 8. EXPENSES & AUDIT LOGS
-# ---------------------------------------------------------------------------
 class Expense(db.Model):
     __tablename__ = 'expenses'
     
@@ -259,3 +268,25 @@ class AuditLog(db.Model):
     icon = db.Column(db.String(50), default='bell')
     color = db.Column(db.String(50), default='text-brand')
     date_created = db.Column(db.DateTime, default=datetime.now)
+
+
+class Job(db.Model):
+    __tablename__ = 'jobs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)  
+    description = db.Column(db.Text, nullable=True)     
+    cutting_list = db.Column(db.Text, nullable=True)    
+    
+    priority = db.Column(db.String(20), default='Medium') 
+    status = db.Column(db.String(30), default='Pending')  
+    
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.id'), nullable=True)
+    worker = db.relationship('Worker', backref=db.backref('jobs', lazy=True))
+
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
+    client = db.relationship('Client', backref=db.backref('jobs', lazy=True))

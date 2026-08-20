@@ -13,7 +13,7 @@
             background: #ffffff !important;
         }
         .dynamic-font {
-            font-size: {{ pdf_font_size or 10 }}pt;
+            font-size: {{ settings.pdf_font_size if settings and settings.pdf_font_size else '11' }}pt;
         }
         .container-sheet {
             width: 100%;
@@ -32,73 +32,59 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 p-1 dynamic-font">
-    <div class="max-w-5xl mx-auto mb-1.5 flex justify-end no-print">
-        <button onclick="window.print()" class="px-3.5 py-1.5 bg-[#FF5500] text-white font-bold rounded-lg text-xs hover:bg-[#e64d00] transition shadow-md flex items-center gap-1.5">
+<body class="bg-slate-100 text-slate-800 p-2 dynamic-font">
+    <div class="max-w-5xl mx-auto mb-2 flex justify-end no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-md flex items-center gap-2">
             Imprimer Bon de Livraison
         </button>
     </div>
 
-    <div class="container-sheet max-w-5xl mx-auto bg-white border border-slate-200 p-3.5 rounded-xl shadow-sm" style="min-height: calc(100vh - 20px);">
-        <div class="space-y-2">
-            <div class="flex justify-between items-start border-b border-slate-300 pb-2">
-                <div>
-                    {% if brand_logo %}
-                    <img src="{{ brand_logo }}" alt="Logo" class="h-7 mb-0.5 object-contain">
-                    {% else %}
-                    <div class="flex items-center gap-1.5 mb-0.5">
-                        <div class="w-6 h-6 bg-[#FF5500] rounded-md flex items-center justify-center text-white font-black text-xs">M</div>
-                        <span class="text-base font-black text-slate-900 tracking-tight">{{ brand_name }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="text-[9px] font-bold text-slate-700">FABRICATION MÉCANIQUE & MÉTALLIQUE</div>
-                    <div class="text-[9px] text-slate-500 mt-0.5 space-y-0">
-                        <div>{{ brand_address }} | Tél : {{ brand_phone }}</div>
-                        <div>Email : {{ brand_email }} | Matricule Fiscal : {{ brand_tax_id }}</div>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-lg font-black text-slate-900 uppercase tracking-wider">BON DE LIVRAISON</div>
-                    <div class="text-xs font-black text-[#FF5500]">#{{ display_num }}</div>
-                    <div class="text-[10px] text-slate-500">Date : {{ quote.date_created.strftime('%d/%m/%Y') }}</div>
-                </div>
-            </div>
+    <div class="container-sheet max-w-5xl mx-auto bg-white border border-slate-200 p-6 rounded-xl shadow-sm" style="min-height: calc(100vh - 30px);">
+        <div class="space-y-4">
+            <!-- DYNAMIC BRAND HEADER -->
+            {% include 'components/brand_header.html' %}
 
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <!-- DOCUMENT METADATA & TRANSPORT INFO -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
                     <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 border-b border-slate-200 pb-0.5">Client / Destinataire</div>
                     {% if quote.client %}
-                    <div class="text-xs font-bold text-slate-900">{{ quote.client.company_name }}</div>
+                    <div class="text-sm font-bold text-slate-900">{{ quote.client.company_name }}</div>
                     <div class="text-[10px] text-slate-600 mt-0.5">Contact : {{ quote.client.contact_name or 'N/A' }}</div>
                     <div class="text-[10px] text-slate-600">Adresse : {{ quote.client.address or 'N/A' }}</div>
                     <div class="text-[10px] text-slate-600">MF : {{ quote.client.tax_id or 'N/A' }}</div>
                     {% else %}
-                    <div class="text-xs font-bold text-slate-900">Client Divers (Walk-in)</div>
+                    <div class="text-sm font-bold text-slate-900">Client Divers (Walk-in)</div>
                     {% endif %}
                 </div>
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 border-b border-slate-200 pb-0.5">Informations de Transport</div>
-                    <div class="text-[10px] text-slate-600">Chauffeur : <span class="font-bold text-slate-800">{{ quote.driver_name or 'Non spécifié' }}</span></div>
-                    <div class="text-[10px] text-slate-600 mt-0.5">CIN : <span class="font-bold text-slate-800">{{ quote.driver_cin or 'N/A' }}</span></div>
-                    <div class="text-[10px] text-slate-600 mt-0.5">Matricule Véhicule : <span class="font-bold text-slate-800">{{ quote.vehicle_plate or 'N/A' }}</span></div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-right">
+                    <div class="text-xl font-black text-slate-900 uppercase tracking-wider">BON DE LIVRAISON</div>
+                    <div class="text-sm font-black text-brand">#{{ display_num }}</div>
+                    <div class="text-[10px] text-slate-500">Date : {{ quote.date_created.strftime('%d/%m/%Y') }}</div>
+                    <div class="mt-2 text-[10px] text-slate-600 border-t border-slate-200 pt-1 text-left">
+                        <div>Chauffeur : <span class="font-bold text-slate-800">{{ quote.driver_name or 'Non spécifié' }}</span></div>
+                        <div>Matricule Véhicule : <span class="font-bold text-slate-800">{{ quote.vehicle_plate or 'N/A' }}</span></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- ITEMS TABLE -->
             <div class="overflow-x-auto rounded-lg border border-slate-200">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-100 text-[10px] font-bold text-slate-600 uppercase border-b border-slate-200">
-                            <th class="py-1.5 px-2 w-10 text-center">#</th>
-                            <th class="py-1.5 px-2">Désignation des Articles</th>
-                            <th class="py-1.5 px-2 w-28 text-right">Quantité Livrée</th>
+                            <th class="py-2 px-3 w-10 text-center">#</th>
+                            <th class="py-2 px-3">Désignation des Articles</th>
+                            <th class="py-2 px-3 w-32 text-right">Quantité Livrée</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 text-xs">
                         {% for item in quote.items %}
                         <tr class="hover:bg-slate-50">
-                            <td class="py-1 px-2 text-center text-slate-500">{{ loop.index }}</td>
-                            <td class="py-1 px-2 text-slate-900 font-medium">{{ item.description }}</td>
-                            <td class="py-1 px-2 text-right font-bold text-slate-900">{{ "%.2f"|format(item.quantity) }}</td>
+                            <td class="py-1.5 px-3 text-center text-slate-500">{{ loop.index }}</td>
+                            <td class="py-1.5 px-3 text-slate-900 font-medium">{{ item.description }}</td>
+                            <td class="py-1.5 px-3 text-right font-bold text-slate-900">{{ "%.2f"|format(item.quantity) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -106,10 +92,15 @@
             </div>
         </div>
 
-        <div class="flex justify-end pt-2">
-            <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 w-48 text-center">
-                <div class="text-[11px] font-bold text-slate-700 mb-4">Cachet & Signature</div>
-                <div class="text-[9px] text-slate-500">{{ brand_name }}</div>
+        <div class="grid grid-cols-2 gap-4 pt-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <div class="text-[11px] font-bold text-slate-700 mb-8">Réception & Discharge Client</div>
+                <div class="text-[9px] text-slate-500">Nom, Date & Signature</div>
+            </div>
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <div class="text-[11px] font-bold text-slate-700 mb-8">Cachet Expéditeur</div>
+                <div class="text-[9px] text-slate-500">{{ settings.brand_name if settings and settings.brand_name else 'MECA-TECH ATIA' }}</div>
             </div>
         </div>
     </div>

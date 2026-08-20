@@ -10,7 +10,8 @@ clients_bp = Blueprint('clients', __name__, url_prefix='/clients')
 @clients_bp.route('/')
 @login_required
 def clients_list():
-    if current_user.role == 'worker':
+    if current_user.role != 'admin' and not current_user.can_manage_clients:
+        flash('Access denied to Clients Directory.', 'error')
         return redirect(url_for('worker_portal.worker_dashboard'))
     all_clients = Client.query.order_by(Client.company_name.asc()).all()
     return render_template('clients/list.html', clients=all_clients)
@@ -18,6 +19,10 @@ def clients_list():
 @clients_bp.route('/view/<int:client_id>')
 @login_required
 def client_dashboard(client_id):
+    if current_user.role != 'admin' and not current_user.can_manage_clients:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     client = Client.query.get_or_404(client_id)
     client_quotes = Quote.query.filter_by(client_id=client.id).order_by(Quote.date_created.desc()).all()
     approved_quotes = [q for q in client_quotes if q.status == 'Approved']
@@ -29,6 +34,10 @@ def client_dashboard(client_id):
 @clients_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def client_create():
+    if current_user.role != 'admin' and not current_user.can_manage_clients:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     if request.method == 'POST':
         new_client = Client(
             company_name=request.form.get('company_name'),
@@ -48,6 +57,10 @@ def client_create():
 @clients_bp.route('/edit/<int:client_id>', methods=['GET', 'POST'])
 @login_required
 def client_edit(client_id):
+    if current_user.role != 'admin' and not current_user.can_manage_clients:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     client = Client.query.get_or_404(client_id)
     if request.method == 'POST':
         client.company_name = request.form.get('company_name')
@@ -64,6 +77,10 @@ def client_edit(client_id):
 @clients_bp.route('/delete/<int:client_id>', methods=['POST'])
 @login_required
 def client_delete(client_id):
+    if current_user.role != 'admin' and not current_user.can_manage_clients:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     client = Client.query.get_or_404(client_id)
     db.session.delete(client)
     db.session.commit()

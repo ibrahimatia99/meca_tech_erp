@@ -1,0 +1,39 @@
+<div class="flex justify-between items-start border-b border-slate-300 pb-3 mb-4">
+    <div class="flex items-center gap-3">
+        {% set display_name = settings.brand_name if settings and settings.brand_name else 'MECA-TECH ATIA' %}
+        
+        {% if settings and settings.brand_logo %}
+            <!-- DYNAMIC BRAND LOGO -->
+            <img src="{{ url_for('static', filename='uploads/' + settings.brand_logo) }}" 
+                 alt="{{ display_name }}" 
+                 class="h-10 w-auto object-contain max-w-[160px]">
+            <div>
+                <h1 class="font-black text-base text-slate-900 tracking-tight leading-tight">{{ display_name }}</h1>
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mt-0.5">
+                    {{ settings.pdf_header_text if settings and settings.pdf_header_text else 'FABRICATION MÉCANIQUE & MÉTALLIQUE' }}
+                </span>
+            </div>
+        {% else %}
+            <!-- FALLBACK: FIRST LETTER BRAND AVATAR -->
+            <div class="w-10 h-10 bg-brand rounded-xl flex items-center justify-center font-black text-white text-xl shadow-md flex-shrink-0">
+                {{ display_name[0] | upper }}
+            </div>
+            <div>
+                <h1 class="font-black text-base text-slate-900 tracking-tight leading-tight">{{ display_name }}</h1>
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mt-0.5">
+                    {{ settings.pdf_header_text if settings and settings.pdf_header_text else 'FABRICATION MÉCANIQUE & MÉTALLIQUE' }}
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- BUSINESS METADATA & CONTACT -->
+    <div class="text-right text-[9px] text-slate-500 space-y-0.5">
+        <div class="font-bold text-slate-800 text-[10px]">{{ settings.brand_address if settings and settings.brand_address else 'Tunisia' }}</div>
+        <div>Tél : <span class="font-semibold text-slate-700">{{ settings.brand_phone if settings and settings.brand_phone else '+216 -- --- ---' }}</span></div>
+        <div>Email : <span class="font-semibold text-slate-700">{{ settings.brand_email if settings and settings.brand_email else 'contact@mecatechatia.tn' }}</span></div>
+        {% if settings and settings.brand_tax_id %}
+        <div>MF : <span class="font-semibold text-slate-700">{{ settings.brand_tax_id }}</span></div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">Shop Floor Jobs & Tasks</h2>
+            <p class="text-xs text-slate-400">Assign machining, welding, and sheet metal cutting lists to workshop workers.</p>
+        </div>
+        <button onclick="document.getElementById('create-job-modal').classList.toggle('hidden')" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
+            + Assign New Task
+        </button>
+    </div>
+
+    <!-- CREATE JOB FORM MODAL -->
+    <div id="create-job-modal" class="hidden bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <h3 class="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2">New Task Assignment</h3>
+        <form action="{{ url_for('jobs.job_create') }}" method="POST" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Task Title *</label>
+                    <input type="text" name="title" required placeholder="e.g. Cut & Chamfer Heavy Shafts" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Assign to Worker *</label>
+                    <select name="worker_id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                        <option value="">-- Select Worker --</option>
+                        {% for w in workers %}
+                        <option value="{{ w.id }}">{{ w.full_name }} ({{ w.role }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Priority</label>
+                    <select name="priority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent 🔥</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Associated Client (Optional)</label>
+                    <select name="client_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                        <option value="">-- None --</option>
+                        {% for c in clients %}
+                        <option value="{{ c.id }}">{{ c.company_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Due Date</label>
+                    <input type="date" name="due_date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Description & Work Instructions</label>
+                    <textarea name="description" rows="3" placeholder="Step-by-step instructions or CAD reference details..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand"></textarea>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Cutting List & Materials Spec</label>
+                    <textarea name="cutting_list" rows="3" placeholder="e.g. Tôle S235 3mm: 4 sheets (2000x1000mm)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('create-job-modal').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-brand text-white font-bold rounded-xl hover:bg-brandHover">Assign Task</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- JOBS ROSTER LIST -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 font-bold uppercase border-b border-slate-800">
+                <tr>
+                    <th class="p-4">Task Details</th>
+                    <th class="p-4">Assigned Worker</th>
+                    <th class="p-4">Priority</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4">Due Date</th>
+                    <th class="p-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for job in jobs %}
+                <tr class="hover:bg-slate-900/40 transition">
+                    <td class="p-4 space-y-1">
+                        <div class="font-bold text-slate-100 text-sm">{{ job.title }}</div>
+                        {% if job.description %}
+                        <p class="text-slate-400 text-[11px]">{{ job.description }}</p>
+                        {% endif %}
+                        {% if job.cutting_list %}
+                        <div class="text-[10px] font-mono bg-slate-950 p-2 rounded-lg border border-slate-800 text-brand">
+                            ✂️ <strong>Cutting Specs:</strong> {{ job.cutting_list }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-200">{{ job.worker.full_name if job.worker else 'Unassigned' }}</div>
+                        <div class="text-[10px] text-slate-500">{{ job.worker.role if job.worker else '' }}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold 
+                            {% if job.priority == 'Urgent' %}bg-red-500/20 text-red-400 border border-red-500/30
+                            {% elif job.priority == 'High' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                            {% else %}bg-slate-800 text-slate-300{% endif %}">
+                            {{ job.priority }}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <form action="{{ url_for('jobs.update_job_status', job_id=job.id) }}" method="POST">
+                            <select name="status" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] font-bold 
+                                {% if job.status == 'Completed' %}text-emerald-400
+                                {% elif job.status == 'In Progress' %}text-amber-400
+                                {% else %}text-slate-400{% endif %} focus:outline-none">
+                                <option value="Pending" {% if job.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if job.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if job.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                <option value="On Hold" {% if job.status == 'On Hold' %}selected{% endif %}>On Hold</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td class="p-4 text-slate-400">
+                        {{ job.due_date.strftime('%d/%m/%Y') if job.due_date else 'No Limit' }}
+                    </td>
+                    <td class="p-4 text-right">
+                        <form action="{{ url_for('jobs.job_delete', job_id=job.id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this job?');">
+                            <button type="submit" class="px-2 py-1 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition font-bold text-xs">×</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-500">No active job assignments. Click "+ Assign New Task" to create one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

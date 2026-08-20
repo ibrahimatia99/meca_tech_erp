@@ -1,6 +1,6 @@
 import calendar
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy import extract
 
@@ -11,7 +11,8 @@ admin_history_bp = Blueprint('admin_history', __name__, url_prefix='/history')
 @admin_history_bp.route('/')
 @login_required
 def admin_history():
-    if current_user.role == 'worker':
+    if current_user.role != 'admin' and not current_user.can_manage_expenses:
+        flash('Access denied to Financial Archives.', 'error')
         return redirect(url_for('worker_portal.worker_dashboard'))
 
     earliest_quote = Quote.query.order_by(Quote.date_created.asc()).first()
@@ -97,7 +98,8 @@ def admin_history():
 @admin_history_bp.route('/<int:year>/<int:month>')
 @login_required
 def admin_month_detail(year, month):
-    if current_user.role == 'worker':
+    if current_user.role != 'admin' and not current_user.can_manage_expenses:
+        flash('Access denied.', 'error')
         return redirect(url_for('worker_portal.worker_dashboard'))
 
     month_quotes = Quote.query.filter(

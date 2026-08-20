@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-4 gap-4">
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('workers.workers_list') }}" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition text-xs font-bold flex items-center gap-1">
+                ← Back
+            </a>
+            <div>
+                <h2 class="text-2xl font-black text-slate-100 flex items-center gap-2">
+                    {{ worker.full_name }}
+                    <span class="px-2.5 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold border border-brand/20">{{ worker.role }}</span>
+                </h2>
+                <p class="text-xs text-slate-400">CIN: {{ worker.cin_number or 'N/A' }} | Phone: {{ worker.phone or 'N/A' }} | Joined: {{ worker.hire_date.strftime('%b %Y') if worker.hire_date else 'N/A' }}</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3 self-end sm:self-auto">
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-right">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block">Current Base Salary</span>
+                <span class="text-lg font-black text-slate-200">{{ "{:,.3f}".format(worker.monthly_rate) }} TND</span>
+            </div>
+            <div class="bg-slate-900 border border-brand/30 p-3 rounded-xl text-right">
+                <span class="text-[10px] uppercase font-bold text-amber-400 block">Current Net Pay</span>
+                <span class="text-lg font-black text-brand">{{ "{:,.3f}".format(net_salary) }} TND</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- LEFT COLUMN: PROFILE EDIT & SALARY AUGMENTATION -->
+        <div class="space-y-6">
+            
+            <!-- SALARY AUGMENTATION CARD -->
+            <div class="bg-darkCard p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+                    <h3 class="text-xs font-bold text-slate-100 uppercase tracking-wider">Salary Adjustment / Augmentation</h3>
+                </div>
+
+                <form action="{{ url_for('workers.worker_edit_salary', worker_id=worker.id) }}" method="POST" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Adjustment Type</label>
+                        <select name="adjustment_type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                            <option value="increase">Add Augmentation (+ TND)</option>
+                            <option value="decrease">Deduct Base Salary (- TND)</option>
+                            <option value="set">Set Fixed Monthly Rate</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Amount / New Rate (TND)</label>
+                        <input type="number" step="0.001" name="amount_change" required placeholder="e.g. 50.000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                    </div>
+
+                    <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-600/20">
+                        Apply Base Salary Change
+                    </button>
+                </form>
+            </div>
+
+            <!-- PROFILE & SYSTEM CREDENTIALS -->
+            <div class="bg-darkCard p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i data-lucide="user-check" class="w-4 h-4 text-brand"></i>
+                    <h3 class="text-xs font-bold text-slate-100 uppercase tracking-wider">Worker Profile & Access</h3>
+                </div>
+
+                <form action="{{ url_for('workers.worker_update', worker_id=worker.id) }}" method="POST" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Full Name</label>
+                        <input type="text" name="full_name" value="{{ worker.full_name }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">Role / Job Title</label>
+                            <input type="text" name="role" value="{{ worker.role }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">CIN Number</label>
+                            <input type="text" name="cin_number" value="{{ worker.cin_number or '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">Phone Number</label>
+                            <input type="text" name="phone" value="{{ worker.phone or '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">Monthly Rate</label>
+                            <input type="number" step="0.001" name="monthly_rate" value="{{ worker.monthly_rate }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-slate-800">
+                        <label class="block font-bold text-amber-400 text-[10px] uppercase">Login Account</label>
+                        <input type="text" name="username" value="{{ worker.user.username if worker.user else '' }}" placeholder="Assign login username" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                        <input type="password" name="password" placeholder="New Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-brand text-white font-bold rounded-xl hover:bg-brandHover transition shadow-lg shadow-brand/20">
+                        Save Profile Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: PRIMES, ADVANCES, AND LIFETIME HISTORY -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- PRIMES & ADVANCES GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- PRIMES (BONUSES) MANAGEMENT -->
+                <div class="bg-darkCard p-5 rounded-2xl border border-slate-800 shadow-xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="award" class="w-4 h-4"></i>
+                            Primes (Bonuses) This Month
+                        </h3>
+                        <span class="text-xs font-black text-amber-400">+{{ "{:,.3f}".format(total_bonuses) }} TND</span>
+                    </div>
+
+                    <form action="{{ url_for('workers.add_worker_bonus', worker_id=worker.id) }}" method="POST" class="space-y-2 text-xs">
+                        <input type="text" name="title" required placeholder="Prime Title (e.g., Performance)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                        <div class="flex gap-2">
+                            <input type="number" step="0.001" name="amount" required placeholder="Amount (TND)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                            <button type="submit" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-xl hover:bg-amber-400 transition whitespace-nowrap">
+                                + Add Prime
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="space-y-1.5 pt-2 max-h-40 overflow-y-auto">
+                        {% for b in bonuses %}
+                        <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
+                            <div>
+                                <span class="font-bold text-amber-400">+ {{ "{:,.3f}".format(b.amount) }} TND</span>
+                                <span class="text-slate-300 text-[11px] block">{{ b.title }}</span>
+                            </div>
+                            <form action="{{ url_for('workers.delete_worker_bonus', bonus_id=b.id) }}" method="POST" onsubmit="return confirm('Delete prime?');">
+                                <button type="submit" class="text-red-400 hover:text-red-300 font-bold text-xs">×</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <p class="text-[11px] text-slate-500 italic">No primes awarded this month.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ADVANCES MANAGEMENT -->
+                <div class="bg-darkCard p-5 rounded-2xl border border-slate-800 shadow-xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <h3 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="wallet" class="w-4 h-4"></i>
+                            Advances This Month
+                        </h3>
+                        <span class="text-xs font-black text-rose-400">-{{ "{:,.3f}".format(total_advances) }} TND</span>
+                    </div>
+
+                    <form action="{{ url_for('workers.add_worker_advance', worker_id=worker.id) }}" method="POST" class="space-y-2 text-xs">
+                        <input type="text" name="notes" placeholder="Notes (optional)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                        <div class="flex gap-2">
+                            <input type="number" step="0.001" name="amount" required placeholder="Amount (TND)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                            <button type="submit" class="px-3 py-1.5 bg-rose-500 text-white font-bold rounded-xl hover:bg-rose-400 transition whitespace-nowrap">
+                                + Add Advance
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="space-y-1.5 pt-2 max-h-40 overflow-y-auto">
+                        {% for a in advances %}
+                        <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
+                            <div>
+                                <span class="font-bold text-rose-400">- {{ "{:,.3f}".format(a.amount) }} TND</span>
+                                {% if a.notes %}<span class="text-slate-400 text-[10px] block">{{ a.notes }}</span>{% endif %}
+                            </div>
+                            <form action="{{ url_for('workers.delete_worker_advance', advance_id=a.id) }}" method="POST" onsubmit="return confirm('Delete advance?');">
+                                <button type="submit" class="text-red-400 hover:text-red-300 font-bold text-xs">×</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <p class="text-[11px] text-slate-500 italic">No advances issued this month.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- LIFETIME HISTORICAL PAYROLL ARCHIVE -->
+            <div class="bg-darkCard rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+                <div class="p-4 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+                        <h3 class="text-xs font-bold text-slate-100 uppercase tracking-wider">Full Worker History (Fiche de Paie)</h3>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-medium">Filtered to Worked Months</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 text-[10px]">
+                            <tr>
+                                <th class="p-3">Period</th>
+                                <th class="p-3">Days Worked</th>
+                                <th class="p-3">Base Rate</th>
+                                <th class="p-3">Primes</th>
+                                <th class="p-3">Advances</th>
+                                <th class="p-3">Net Paid</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/80">
+                            {% for rec in history_records %}
+                            <tr class="hover:bg-slate-900/40 transition">
+                                <td class="p-3 font-bold text-slate-200">{{ rec.month_name }} {{ rec.year }}</td>
+                                <td class="p-3 text-slate-300">{{ rec.days_worked }} Days</td>
+                                <td class="p-3 text-slate-300">{{ "{:,.3f}".format(rec.base_rate) }} TND</td>
+                                <td class="p-3 font-bold text-amber-400">+{{ "{:,.3f}".format(rec.total_bonuses) }} TND</td>
+                                <td class="p-3 font-bold text-rose-400">-{{ "{:,.3f}".format(rec.total_advances) }} TND</td>
+                                <td class="p-3 font-black text-emerald-400">{{ "{:,.3f}".format(rec.net_pay) }} TND</td>
+                                <td class="p-3 text-right">
+                                    <a href="{{ url_for('worker_portal.print_fiche_de_paie', year=rec.year, month=rec.month, worker_id=worker.id) }}" target="_blank" class="px-2.5 py-1 bg-slate-800 hover:bg-brand text-slate-200 hover:text-white rounded-lg font-bold text-[10px] transition">
+                                        🖨️ Print Slip
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="p-6 text-center text-slate-500 italic">No worked history recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

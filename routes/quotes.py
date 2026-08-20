@@ -14,7 +14,8 @@ quotes_bp = Blueprint('quotes', __name__, url_prefix='/quotes')
 @quotes_bp.route('/')
 @login_required
 def quotes_list():
-    if current_user.role == 'worker':
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied to Commercial Documents.', 'error')
         return redirect(url_for('worker_portal.worker_dashboard'))
 
     selected_year = request.args.get('year', type=int)
@@ -48,6 +49,10 @@ def quotes_list():
 @quotes_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def quote_create():
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied to Commercial Documents.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     clients = Client.query.all()
     
     if request.method == 'POST':
@@ -148,6 +153,10 @@ def quote_create():
 @quotes_bp.route('/edit/<int:quote_id>', methods=['GET', 'POST'])
 @login_required
 def quote_edit(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied to Commercial Documents.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     clients = Client.query.all()
     
@@ -223,6 +232,10 @@ def quote_edit(quote_id):
 @quotes_bp.route('/update-status/<int:quote_id>', methods=['POST'])
 @login_required
 def update_quote_status(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     new_status = request.form.get('status')
     if new_status:
@@ -246,6 +259,10 @@ def update_quote_status(quote_id):
 @quotes_bp.route('/add-payment/<int:quote_id>', methods=['POST'])
 @login_required
 def add_quote_payment(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     added_amount = parse_float(request.form.get('add_amount'))
 
@@ -267,6 +284,10 @@ def add_quote_payment(quote_id):
 @quotes_bp.route('/edit-payment/<int:payment_id>', methods=['POST'])
 @login_required
 def edit_quote_payment(payment_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     payment = PaymentHistory.query.get_or_404(payment_id)
     quote = payment.quote
     
@@ -287,6 +308,10 @@ def edit_quote_payment(payment_id):
 @quotes_bp.route('/delete-payment/<int:payment_id>', methods=['POST'])
 @login_required
 def delete_quote_payment(payment_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     payment = PaymentHistory.query.get_or_404(payment_id)
     quote = payment.quote
     
@@ -302,6 +327,10 @@ def delete_quote_payment(payment_id):
 @quotes_bp.route('/delete/<int:quote_id>', methods=['POST'])
 @login_required
 def quote_delete(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     db.session.delete(quote)
     db.session.commit()
@@ -311,6 +340,10 @@ def quote_delete(quote_id):
 @quotes_bp.route('/print/<int:quote_id>')
 @login_required
 def quote_print(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     display_num = clean_doc_number(quote.quote_number, 'devis')
     return render_template('quotes/print.html', quote=quote, display_num=display_num, pdf_font_size=get_setting('pdf_font_size', '11'), pdf_margin=get_setting('pdf_margin', '5'))
@@ -318,6 +351,10 @@ def quote_print(quote_id):
 @quotes_bp.route('/invoice/<int:quote_id>')
 @login_required
 def invoice_print(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     display_num = clean_doc_number(quote.quote_number, 'facture')
     return render_template('quotes/invoice.html', quote=quote, display_num=display_num, pdf_font_size=get_setting('pdf_font_size', '11'), pdf_margin=get_setting('pdf_margin', '5'))
@@ -325,6 +362,10 @@ def invoice_print(quote_id):
 @quotes_bp.route('/bon-livraison/<int:quote_id>')
 @login_required
 def bon_livraison_print(quote_id):
+    if current_user.role != 'admin' and not current_user.can_manage_quotes:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     quote = Quote.query.get_or_404(quote_id)
     display_num = clean_doc_number(quote.quote_number, 'bl')
     return render_template('quotes/bon_livraison.html', quote=quote, display_num=display_num, pdf_font_size=get_setting('pdf_font_size', '11'), pdf_margin=get_setting('pdf_margin', '5'))

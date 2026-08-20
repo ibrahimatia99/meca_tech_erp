@@ -1,20 +1,76 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto py-12 text-center space-y-6">
-    <div class="inline-flex p-6 bg-brand/10 text-brand rounded-3xl border border-brand/20 text-4xl">
-        🛠️
-    </div>
-    
-    <div class="space-y-2">
-        <h2 class="text-2xl font-black text-slate-100">Jobs & Tasks Section</h2>
-        <p class="text-xs text-slate-400 max-w-md mx-auto">
-            This section is coming soon! You will be able to view assigned daily shop floor tasks, cutting lists, and CAD project specifications here.
-        </p>
+<div class="space-y-6 max-w-4xl mx-auto">
+    <!-- HEADER -->
+    <div class="border-b border-slate-800 pb-4 flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-100">My Assigned Tasks 🛠️</h2>
+            <p class="text-xs text-slate-400">Shop floor job queue for <strong>{{ current_user.full_name }}</strong></p>
+        </div>
+        <div class="px-3 py-1 bg-brand/10 text-brand border border-brand/20 font-bold text-xs rounded-xl">
+            Active Jobs: {{ jobs|selectattr("status", "ne", "Completed")|list|length }}
+        </div>
     </div>
 
-    <div class="inline-block px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs border border-slate-700">
-        Status: Version 3.0 In Development
+    <!-- TASK CARDS -->
+    <div class="space-y-4">
+        {% for job in jobs %}
+        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold 
+                            {% if job.priority == 'Urgent' %}bg-red-500/20 text-red-400 border border-red-500/30
+                            {% elif job.priority == 'High' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                            {% else %}bg-slate-800 text-slate-300{% endif %}">
+                            {{ job.priority }}
+                        </span>
+                        <h3 class="text-base font-bold text-slate-100">{{ job.title }}</h3>
+                    </div>
+                    {% if job.client %}
+                    <p class="text-xs text-slate-400 mt-1">Client: <strong class="text-slate-200">{{ job.client.company_name }}</strong></p>
+                    {% endif %}
+                </div>
+
+                <!-- WORKER STATUS TOGGLE -->
+                <form action="{{ url_for('jobs.update_job_status', job_id=job.id) }}" method="POST">
+                    <select name="status" onchange="this.form.submit()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold 
+                        {% if job.status == 'Completed' %}text-emerald-400 border-emerald-500/30
+                        {% elif job.status == 'In Progress' %}text-amber-400 border-amber-500/30
+                        {% else %}text-slate-400{% endif %} focus:outline-none">
+                        <option value="Pending" {% if job.status == 'Pending' %}selected{% endif %}>⏳ Pending</option>
+                        <option value="In Progress" {% if job.status == 'In Progress' %}selected{% endif %}>⚙️ In Progress</option>
+                        <option value="Completed" {% if job.status == 'Completed' %}selected{% endif %}>✓ Completed</option>
+                    </select>
+                </form>
+            </div>
+
+            <!-- INSTRUCTIONS & CUTTING LIST -->
+            {% if job.description %}
+            <div class="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <strong class="text-slate-400 block text-[10px] uppercase mb-1">Work Instructions:</strong>
+                {{ job.description }}
+            </div>
+            {% endif %}
+
+            {% if job.cutting_list %}
+            <div class="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <strong class="text-brand block text-[10px] uppercase mb-1">✂️ Sheet & Profile Cutting Specs:</strong>
+                <pre class="whitespace-pre-wrap font-mono text-[11px] text-slate-200">{{ job.cutting_list }}</pre>
+            </div>
+            {% endif %}
+
+            <div class="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-800 pt-3">
+                <span>Assigned: {{ job.date_created.strftime('%d/%m/%Y') }}</span>
+                <span>Due Date: <strong class="text-slate-300">{{ job.due_date.strftime('%d/%m/%Y') if job.due_date else 'Flexible' }}</strong></span>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12 bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-800 text-slate-500">
+            🎉 No active tasks assigned to you right now. Check back soon!
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

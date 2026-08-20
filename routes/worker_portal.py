@@ -4,10 +4,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import extract
 
-from models import Worker, SalaryAdvance, WorkerAttendance
+from extensions import db
+from models import Worker, SalaryAdvance, WorkerAttendance, Job
 from utils.helpers import format_amount_in_words
 
 worker_portal_bp = Blueprint('worker_portal', __name__, url_prefix='/worker')
+
 
 @worker_portal_bp.route('/dashboard')
 @login_required
@@ -76,7 +78,9 @@ def worker_dashboard():
         attendance_dict=attendance_dict
     )
 
-@worker_portal_bp.route('/history')
+
+@worker_portal_bp.route('/history', endpoint='worker_history')
+@worker_portal_bp.route('/history', endpoint='history')
 @login_required
 def worker_history():
     worker = Worker.query.filter_by(user_id=current_user.id).first() or Worker.query.filter_by(full_name=current_user.full_name).first()
@@ -136,7 +140,8 @@ def worker_history():
                 'net_pay': net_pay
             })
 
-    return render_template('worker/history.html', worker=worker, history_records=history_records)
+    return render_template('worker/history.html', worker=worker, history_records=history_records, history=history_records)
+
 
 @worker_portal_bp.route('/fiche-de-paie/<int:year>/<int:month>')
 @login_required
@@ -149,6 +154,10 @@ def print_fiche_de_paie(year, month):
     target_worker_id = request.args.get('worker_id', type=int)
     if current_user.role == 'admin' and target_worker_id:
         worker = Worker.query.get_or_404(target_worker_id)
+
+    if not worker:
+        flash("Worker profile not found.", "error")
+        return redirect(url_for('auth.dashboard'))
 
     advances = SalaryAdvance.query.filter(
         SalaryAdvance.worker_id == worker.id,
@@ -191,7 +200,10 @@ def print_fiche_de_paie(year, month):
         days_worked=days_worked
     )
 
+
 @worker_portal_bp.route('/jobs')
 @login_required
 def worker_jobs():
-    return render_template('worker/jobs.html')
+    worker = Worker.query.filter_by(user_id=current_user.id).first() or Worker.query.filter_by(full_name=current_user.full_name).first()
+    assigned_jobs = Job.query.filter_by(worker_id=worker.id).order_by(Job.date_created.desc()).all() if worker else []
+    return render_template('worker/jobs.html', jobs=assigned_jobs, worker=worker)

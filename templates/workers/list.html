@@ -2,191 +2,116 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- HEADER -->
     <div class="flex justify-between items-center border-b border-slate-800 pb-4">
         <div>
             <h2 class="text-2xl font-bold text-slate-100">Workshop Workers Roster</h2>
-            <p class="text-xs text-slate-400">Manage worker contracts, monthly rates, salary raises, bonuses, and monthly attendance.</p>
+            <p class="text-xs text-slate-400">Click any worker's name to manage their profile, login access permissions, advances, and pay slips.</p>
         </div>
-        <a href="{{ url_for('workers.worker_create') }}" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
+        <button onclick="document.getElementById('add-worker-modal').classList.toggle('hidden')" class="px-4 py-2 bg-brand text-white font-bold rounded-xl text-xs hover:bg-brandHover transition shadow-lg shadow-brand/20">
             + Register New Worker
-        </a>
+        </button>
     </div>
 
-    <!-- TOTAL PAYROLL OVERVIEW -->
-    <div class="bg-lightCard dark:bg-darkCard p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
-        <div>
-            <div class="text-xs font-semibold text-slate-400">Active Payroll Obligation (Base Rates)</div>
-            <div class="text-xl font-black text-slate-100 mt-0.5">{{ "{:,.3f}".format(total_payroll) }} <span class="text-xs">TND / month</span></div>
-        </div>
-        <div class="text-right">
-            <div class="text-xs font-semibold text-slate-400">Total Registered Workers</div>
-            <div class="text-xl font-black text-brand mt-0.5">{{ worker_data|length }} Workers</div>
-        </div>
-    </div>
-
-    <!-- WORKERS LIST GRID -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {% for item in worker_data %}
-        {% set w = item.worker %}
-        <div class="bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-            
-            <!-- WORKER HEADER -->
-            <div class="flex justify-between items-start border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center font-black text-brand text-sm">
-                        {{ w.full_name[0] if w.full_name else 'W' }}
-                    </div>
-                    <div>
-                        <div class="text-sm font-bold text-slate-100">{{ w.full_name }}</div>
-                        <div class="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{{ w.role }} • <span class="font-mono text-brand">{{ w.phone or 'No Phone' }}</span></div>
-                    </div>
-                </div>
-                <div class="text-right flex items-center gap-2">
-                    <div>
-                        <div class="text-xs font-black text-slate-100">{{ "{:,.3f}".format(w.monthly_rate) }} <span class="text-[10px]">TND</span></div>
-                        <div class="text-[10px] text-slate-500">Base Monthly Rate</div>
-                    </div>
-                    <button onclick="document.getElementById('edit-salary-{{ w.id }}').classList.toggle('hidden')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded font-bold transition">Edit Rate</button>
-                </div>
-            </div>
-
-            <!-- EDIT BASE SALARY FORM (Hidden by default) -->
-            <div id="edit-salary-{{ w.id }}" class="hidden bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
-                <div class="text-[11px] font-bold text-slate-200">Modify Base Monthly Rate</div>
-                <form action="{{ url_for('workers.edit_worker_salary', worker_id=w.id) }}" method="POST" class="flex gap-2">
-                    <input type="number" step="0.001" name="new_rate" value="{{ w.monthly_rate }}" required class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                    <button type="submit" class="bg-brand text-white px-3 py-1 rounded text-xs font-bold hover:bg-brandHover">Save</button>
-                </form>
-            </div>
-
-            <!-- FINANCIAL SUMMARY & ADVANCES -->
-            <div class="grid grid-cols-2 gap-3 text-xs bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+    <!-- REGISTER WORKER MODAL -->
+    <div id="add-worker-modal" class="hidden bg-lightCard dark:bg-darkCard p-6 rounded-2xl border border-slate-800 space-y-4">
+        <h3 class="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2">New Worker Registration</h3>
+        <form action="{{ url_for('workers.worker_create') }}" method="POST" class="space-y-4 text-xs">
+            <div class="grid grid-cols-4 gap-4">
                 <div>
-                    <span class="text-slate-500 block text-[10px]">Current Month Advances</span>
-                    <span class="font-bold text-amber-400">-{{ "{:,.3f}".format(item.total_advances) }} TND</span>
+                    <label class="block font-bold text-slate-300 mb-1">Full Name *</label>
+                    <input type="text" name="full_name" required placeholder="e.g. Mohamed Ali" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
                 </div>
-                <div class="text-right">
-                    <span class="text-slate-500 block text-[10px]">Estimated Net Salary</span>
-                    <span class="font-bold text-emerald-400">{{ "{:,.3f}".format(item.net_salary) }} TND</span>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Role / Position *</label>
+                    <input type="text" name="role" required placeholder="MIG Welder / CNC Operator" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Phone Number</label>
+                    <input type="text" name="phone" placeholder="+216 -- --- ---" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">CIN Number</label>
+                    <input type="text" name="cin_number" placeholder="12345678" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
                 </div>
             </div>
 
-            <!-- QUICK ACTION FORMS (ADVANCE, RAISE, BONUS) -->
-            <div class="space-y-2 pt-1">
-                <!-- ISSUE ADVANCE FORM -->
-                <form action="{{ url_for('workers.add_worker_advance', worker_id=w.id) }}" method="POST" class="flex gap-2">
-                    <input type="number" step="0.001" name="amount" placeholder="Advance (TND)" required class="w-28 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="notes" placeholder="Reason (e.g. Fuel)" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-amber-500 focus:outline-none">
-                    <button type="submit" class="px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold rounded-lg text-xs hover:bg-amber-500 hover:text-slate-950 transition">
-                        + Advance
-                    </button>
-                </form>
-
-                <!-- TOGGLE BUTTONS FOR SALARY RAISE & BONUS -->
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('raise-box-{{ w.id }}').classList.toggle('hidden')" class="flex-1 py-1.5 bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-slate-300 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1">
-                        📈 Salary Raise
-                    </button>
-                    <button onclick="document.getElementById('bonus-box-{{ w.id }}').classList.toggle('hidden')" class="flex-1 py-1.5 bg-slate-900 border border-slate-800 hover:border-brand/40 text-slate-300 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1">
-                        🎁 Add Bonus
-                    </button>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Monthly Salary (TND)</label>
+                    <input type="number" step="0.001" name="monthly_rate" placeholder="1200.000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
                 </div>
-
-                <!-- SALARY RAISE FORM -->
-                <div id="raise-box-{{ w.id }}" class="hidden bg-slate-900/90 p-3 rounded-xl border border-emerald-500/30 space-y-2">
-                    <div class="text-[11px] font-bold text-emerald-400">Apply Salary Raise (Augmentation)</div>
-                    <form action="{{ url_for('workers.worker_salary_raise', worker_id=w.id) }}" method="POST" class="flex gap-2">
-                        <input type="number" step="0.001" name="raise_amount" placeholder="Value (+amount)" required class="w-28 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                        <select name="raise_type" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                            <option value="amount">TND (Fixed)</option>
-                            <option value="percentage">% (Percentage)</option>
-                        </select>
-                        <button type="submit" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-emerald-500">Apply</button>
-                    </form>
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Auto Payday</label>
+                    <select name="salary_pay_day" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand">
+                        {% for d in range(1, 29) %}
+                        <option value="{{ d }}" {% if d == 28 %}selected{% endif %}>Every {{ d }}th of month</option>
+                        {% endfor %}
+                    </select>
                 </div>
+            </div>
 
-                <!-- ADD BONUS FORM -->
-                <div id="bonus-box-{{ w.id }}" class="hidden bg-slate-900/90 p-3 rounded-xl border border-brand/30 space-y-2">
-                    <div class="text-[11px] font-bold text-brand">Grant Bonus (Prime)</div>
-                    <form action="{{ url_for('workers.worker_add_bonus', worker_id=w.id) }}" method="POST" class="space-y-2">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" step="0.001" name="bonus_amount" placeholder="Amount (TND)" required class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                            <input type="text" name="notes" placeholder="Bonus Reason (e.g. Aïd)" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="submit" class="bg-brand text-white px-3 py-1 rounded text-xs font-bold hover:bg-brandHover">Save Bonus</button>
-                        </div>
-                    </form>
-                </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('add-worker-modal').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-brand text-white font-bold rounded-xl hover:bg-brandHover">Register Worker</button>
+            </div>
+        </form>
+    </div>
 
-                <!-- ADVANCES & BONUSES LOG LIST WITH EDIT/DELETE -->
-                {% if item.advances %}
-                <div class="mt-2 pt-2 border-t border-slate-800 space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                    <div class="text-[10px] text-slate-400 font-bold uppercase">Recorded Advances & Bonuses This Month:</div>
-                    {% for adv in item.advances %}
-                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 text-[11px] space-y-1.5">
-                        <div class="flex justify-between items-center">
+    <!-- ROSTER TABLE -->
+    <div class="bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 font-bold uppercase border-b border-slate-800">
+                <tr>
+                    <th class="p-4">Worker Name</th>
+                    <th class="p-4">Role & Specialization</th>
+                    <th class="p-4">Base Rate (TND)</th>
+                    <th class="p-4">Auto Payday</th>
+                    <th class="p-4">Linked Account</th>
+                    <th class="p-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for w in workers %}
+                <tr class="hover:bg-slate-900/40 transition">
+                    <td class="p-4">
+                        <a href="{{ url_for('workers.worker_detail', worker_id=w.id) }}" class="font-bold text-slate-100 text-sm hover:text-brand transition flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-brand font-black text-xs">
+                                {{ w.full_name[0] | upper }}
+                            </div>
                             <div>
-                                <span class="text-slate-200 font-medium">{{ adv.notes or 'Advance' }}</span>
-                                <span class="text-[9px] text-slate-500 ml-1">({{ adv.date_given.strftime('%d %b') }})</span>
+                                <div class="text-slate-100 font-bold">{{ w.full_name }}</div>
+                                <div class="text-[10px] text-slate-500">CIN: {{ w.cin_number or 'N/A' }} | {{ w.phone or 'No phone' }}</div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold {% if adv.amount < 0 %}text-brand{% else %}text-amber-400{% endif %}">
-                                    {% if adv.amount < 0 %}+{{ "{:,.3f}".format(-adv.amount) }}{% else %}-{{ "{:,.3f}".format(adv.amount) }}{% endif %} TND
-                                </span>
-                                <!-- Trigger Edit Form -->
-                                <button onclick="document.getElementById('edit-adv-{{ adv.id }}').classList.toggle('hidden')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-bold">Edit</button>
-                                <!-- Delete Form -->
-                                <form action="{{ url_for('workers.delete_worker_advance', advance_id=adv.id) }}" method="POST" onsubmit="return confirm('Delete this entry?');">
-                                    <button type="submit" class="text-red-400 hover:text-white text-xs font-bold">×</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Inline Edit Form for Advance/Bonus (Hidden by default) -->
-                        <div id="edit-adv-{{ adv.id }}" class="hidden pt-2 border-t border-slate-800">
-                            <form action="{{ url_for('workers.edit_worker_advance', advance_id=adv.id) }}" method="POST" class="space-y-2">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <input type="number" step="0.001" name="amount" value="{{ adv.amount }}" required class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
-                                    <input type="text" name="notes" value="{{ adv.notes }}" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded hover:bg-emerald-500">Update Entry</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- ACTIONS FOOTER -->
-            <div class="flex justify-between items-center pt-2 border-t border-slate-800/80">
-                <div class="flex items-center gap-2">
-                    <a href="{{ url_for('workers.worker_edit', worker_id=w.id) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition border border-slate-700">
-                        Edit Profile
-                    </a>
-                    <a href="{{ url_for('workers.worker_calendar', worker_id=w.id) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition border border-slate-700 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Attendance & Fiche
-                    </a>
-                </div>
-
-                <form action="{{ url_for('workers.worker_delete', worker_id=w.id) }}" method="POST" onsubmit="return confirm('Remove {{ w.full_name }} from roster?');">
-                    <button type="submit" class="text-red-400 hover:text-white font-bold text-xs bg-red-500/10 hover:bg-red-500 px-3 py-1.5 rounded-lg transition border border-red-500/20">
-                        Delete
-                    </button>
-                </form>
-            </div>
-
-        </div>
-        {% else %}
-        <div class="col-span-2 text-center py-12 text-slate-500 bg-lightCard dark:bg-darkCard rounded-2xl border border-slate-800">
-            No workers added to the workshop roster yet.
-        </div>
-        {% endfor %}
+                        </a>
+                    </td>
+                    <td class="p-4 text-slate-300 font-medium">{{ w.role }}</td>
+                    <td class="p-4 font-bold text-slate-100">{{ "{:,.3f}".format(w.monthly_rate) }} TND</td>
+                    <td class="p-4 text-slate-400 font-bold">Every {{ w.salary_pay_day }}th</td>
+                    <td class="p-4">
+                        {% if w.user %}
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
+                            👤 {{ w.user.username }}
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-500 font-bold text-[10px]">No Login</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-right space-x-2">
+                        <a href="{{ url_for('workers.worker_calendar', worker_id=w.id) }}" class="px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-bold transition">
+                            📅 Attendance
+                        </a>
+                        <a href="{{ url_for('workers.worker_detail', worker_id=w.id) }}" class="px-3 py-1.5 bg-brand/10 text-brand border border-brand/20 hover:bg-brand hover:text-white rounded-xl font-bold transition">
+                            Open Profile Hub →
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-500">No workers registered in roster. Click "+ Register New Worker" to add one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from extensions import db
 from models import StockItem
@@ -10,12 +10,20 @@ stock_bp = Blueprint('stock', __name__, url_prefix='/stock')
 @stock_bp.route('/')
 @login_required
 def stock_list():
+    if current_user.role != 'admin' and not current_user.can_manage_stock:
+        flash('Access denied to Stock module.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     all_stock = StockItem.query.order_by(StockItem.name.asc()).all()
     return render_template('stock/list.html', stock=all_stock)
 
 @stock_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def stock_create():
+    if current_user.role != 'admin' and not current_user.can_manage_stock:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     if request.method == 'POST':
         new_item = StockItem(
             name=request.form.get('name'),
@@ -31,6 +39,10 @@ def stock_create():
 @stock_bp.route('/update-qty/<int:item_id>', methods=['POST'])
 @login_required
 def stock_update_qty(item_id):
+    if current_user.role != 'admin' and not current_user.can_manage_stock:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     item = StockItem.query.get_or_404(item_id)
     item.quantity = parse_float(request.form.get('quantity'))
     db.session.commit()
@@ -40,6 +52,10 @@ def stock_update_qty(item_id):
 @stock_bp.route('/delete/<int:item_id>', methods=['POST'])
 @login_required
 def stock_delete(item_id):
+    if current_user.role != 'admin' and not current_user.can_manage_stock:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     item = StockItem.query.get_or_404(item_id)
     db.session.delete(item)
     db.session.commit()

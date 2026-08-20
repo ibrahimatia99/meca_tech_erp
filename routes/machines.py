@@ -11,12 +11,20 @@ machines_bp = Blueprint('machines', __name__, url_prefix='/machines')
 @machines_bp.route('/')
 @login_required
 def machines_list():
+    if current_user.role != 'admin' and not current_user.can_manage_machines:
+        flash('Access denied to Machinery module.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     machines = Machine.query.order_by(Machine.name.asc()).all()
     return render_template('machines/list.html', machines=machines)
 
 @machines_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def machine_create():
+    if current_user.role != 'admin' and not current_user.can_manage_machines:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     if request.method == 'POST':
         new_machine = Machine(
             name=request.form.get('name'),
@@ -34,6 +42,10 @@ def machine_create():
 @machines_bp.route('/edit/<int:machine_id>', methods=['GET', 'POST'])
 @login_required
 def machine_edit(machine_id):
+    if current_user.role != 'admin' and not current_user.can_manage_machines:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     machine = Machine.query.get_or_404(machine_id)
     if request.method == 'POST':
         machine.name = request.form.get('name')
@@ -48,6 +60,10 @@ def machine_edit(machine_id):
 @machines_bp.route('/view/<int:machine_id>')
 @login_required
 def machine_detail(machine_id):
+    if current_user.role != 'admin' and not current_user.can_manage_machines:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     machine = Machine.query.get_or_404(machine_id)
     history_logs = MaintenanceLog.query.filter_by(machine_id=machine.id).order_by(MaintenanceLog.date_logged.desc()).all()
     total_cost = sum(log.cost for log in history_logs)
@@ -56,6 +72,10 @@ def machine_detail(machine_id):
 @machines_bp.route('/log-service/<int:machine_id>', methods=['POST'])
 @login_required
 def machine_log_service(machine_id):
+    if current_user.role != 'admin' and not current_user.can_manage_machines:
+        flash('Access denied.', 'error')
+        return redirect(url_for('worker_portal.worker_dashboard'))
+
     machine = Machine.query.get_or_404(machine_id)
     new_status = request.form.get('status')
     service_desc = request.form.get('service_description')

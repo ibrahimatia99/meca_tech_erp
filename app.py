@@ -17,6 +17,7 @@ from routes.stock import stock_bp
 from routes.machines import machines_bp
 from routes.workers import workers_bp
 from routes.quotes import quotes_bp
+from routes.jobs import jobs_bp
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -47,6 +48,7 @@ def create_app(config_class=Config):
     app.register_blueprint(machines_bp)
     app.register_blueprint(workers_bp)
     app.register_blueprint(quotes_bp)
+    app.register_blueprint(jobs_bp)  # Moved inside create_app()
 
     return app
 
